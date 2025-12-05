@@ -2,25 +2,56 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { PatientProvider } from "@/contexts/PatientContext";
+import { MainLayout } from "@/components/layout/MainLayout";
+
+// Pages
 import Index from "./pages/Index";
+import LoginPage from "./pages/LoginPage";
+import DashboardPage from "./pages/DashboardPage";
+import PatientFormPage from "./pages/PatientFormPage";
+import VollstationPage from "./pages/VollstationPage";
+import TeilstationOverviewPage from "./pages/TeilstationOverviewPage";
+import TeilstationOpenPage from "./pages/TeilstationOpenPage";
+import StationPage from "./pages/StationPage";
+import AdminCenterPage from "./pages/AdminCenterPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <PatientProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<LoginPage />} />
+              
+              {/* Protected Routes */}
+              <Route element={<MainLayout />}>
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/patient/new" element={<PatientFormPage />} />
+                <Route path="/patient/edit/:id" element={<PatientFormPage />} />
+                <Route path="/vollstation" element={<VollstationPage />} />
+                <Route path="/teilstation/overview" element={<TeilstationOverviewPage />} />
+                <Route path="/teilstation/open" element={<TeilstationOpenPage />} />
+                <Route path="/station/:station" element={<StationPage />} />
+                <Route path="/admin" element={<AdminCenterPage />} />
+              </Route>
+
+              {/* Catch-all */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </PatientProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
