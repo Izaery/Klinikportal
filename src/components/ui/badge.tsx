@@ -12,6 +12,17 @@ const badgeVariants = cva(
         secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
         destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "text-foreground",
+        // Station badges
+        stationA: "border-transparent bg-station-a text-primary-foreground",
+        stationB: "border-transparent bg-station-b text-primary-foreground",
+        stationC: "border-transparent bg-station-c text-primary-foreground",
+        stationD: "border-transparent bg-station-d text-primary-foreground",
+        // Urgency badges
+        urgent: "border-transparent bg-urgent text-urgent-foreground",
+        elective: "border-transparent bg-success text-success-foreground",
+        // Admission type
+        vollstation: "border-transparent bg-primary text-primary-foreground",
+        teilstation: "border-transparent bg-accent text-accent-foreground",
       },
     },
     defaultVariants: {
