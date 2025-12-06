@@ -9,7 +9,7 @@ import {
 import { usePatients } from '@/contexts/PatientContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
-import { STATION_LABELS, URGENCY_LABELS } from '@/types';
+import { STATION_LABELS, URGENCY_LABELS, VOLL_STATION_LABELS } from '@/types';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -18,6 +18,7 @@ const DashboardPage: React.FC = () => {
     getTeilstationPatients, 
     getOpenTeilstationPatients,
     getStationPatients,
+    getVollStationPatients,
     getRecentlyModified 
   } = usePatients();
 
@@ -31,6 +32,12 @@ const DashboardPage: React.FC = () => {
     B: getStationPatients('B').length,
     C: getStationPatients('C').length,
     D: getStationPatients('D').length,
+  };
+
+  const vollStationCounts = {
+    E: getVollStationPatients('E').length,
+    F: getVollStationPatients('F').length,
+    G: getVollStationPatients('G').length,
   };
 
   const formatDate = (dateString: string) => {
@@ -113,7 +120,29 @@ const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Station Belegung */}
+      {/* Vollstation Belegung */}
+      <div className="clinic-card">
+        <h2 className="text-lg font-semibold text-foreground mb-4">Vollstation Belegung</h2>
+        <div className="grid grid-cols-3 gap-4">
+          {(['E', 'F', 'G'] as const).map((station) => (
+            <div 
+              key={station} 
+              className="p-4 rounded-lg border border-border bg-muted/30 text-center"
+            >
+              <Badge 
+                variant="secondary"
+                className="mb-2"
+              >
+                {VOLL_STATION_LABELS[station]}
+              </Badge>
+              <p className="text-2xl font-bold text-foreground">{vollStationCounts[station]}</p>
+              <p className="text-xs text-muted-foreground">Patienten</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Teilstation Belegung */}
       <div className="clinic-card">
         <h2 className="text-lg font-semibold text-foreground mb-4">Teilstation Belegung</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

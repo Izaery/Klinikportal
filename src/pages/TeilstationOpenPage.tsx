@@ -21,6 +21,7 @@ const TeilstationOpenPage: React.FC = () => {
   const { getOpenTeilstationPatients, archivePatient, assignStation } = usePatients();
   const navigate = useNavigate();
   const [patientToDelete, setPatientToDelete] = React.useState<Patient | null>(null);
+  const [stationAssignment, setStationAssignment] = React.useState<{ patient: Patient; station: Station } | null>(null);
 
   const patients = getOpenTeilstationPatients();
 
@@ -44,8 +45,15 @@ const TeilstationOpenPage: React.FC = () => {
   };
 
   const handleAssignStation = (patient: Patient, station: Station) => {
-    assignStation(patient.id, station);
-    toast.success(`${patient.lastName}, ${patient.firstName} wurde Station ${station} zugewiesen`);
+    setStationAssignment({ patient, station });
+  };
+
+  const confirmAssignStation = () => {
+    if (stationAssignment) {
+      assignStation(stationAssignment.patient.id, stationAssignment.station);
+      toast.success(`${stationAssignment.patient.lastName}, ${stationAssignment.patient.firstName} wurde Station ${stationAssignment.station} zugewiesen`);
+      setStationAssignment(null);
+    }
   };
 
   const confirmDelete = () => {
@@ -88,6 +96,24 @@ const TeilstationOpenPage: React.FC = () => {
             <AlertDialogCancel>Abbrechen</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Archivieren
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!stationAssignment} onOpenChange={() => setStationAssignment(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Station zuweisen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Möchten Sie <strong>{stationAssignment?.patient.lastName}, {stationAssignment?.patient.firstName}</strong> wirklich 
+              Station {stationAssignment?.station} zuweisen?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmAssignStation}>
+              Zuweisen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

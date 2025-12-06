@@ -7,14 +7,14 @@ import {
   Edit,
   Trash2
 } from 'lucide-react';
-import { Patient, Station, URGENCY_LABELS, STATION_LABELS } from '@/types';
+import { Patient, Station, VollStation, URGENCY_LABELS, STATION_LABELS, VOLL_STATION_LABELS } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
-type SortField = 'lastName' | 'firstName' | 'birthDate' | 'diagnosis' | 'station' | 'urgency' | 'lastModifiedAt';
+type SortField = 'lastName' | 'firstName' | 'birthDate' | 'diagnosis' | 'station' | 'vollStation' | 'urgency' | 'lastModifiedAt';
 type SortDirection = 'asc' | 'desc';
 
 interface Column {
@@ -88,6 +88,10 @@ export const PatientTable: React.FC<PatientTableProps> = ({
           aVal = a.station || '';
           bVal = b.station || '';
           break;
+        case 'vollStation':
+          aVal = a.vollStation || '';
+          bVal = b.vollStation || '';
+          break;
         case 'urgency':
           aVal = a.urgency || '';
           bVal = b.urgency || '';
@@ -107,7 +111,7 @@ export const PatientTable: React.FC<PatientTableProps> = ({
   }, [patients, searchTerm, sortField, sortDirection]);
 
   const handleSort = (field: string) => {
-    const sortableFields: SortField[] = ['lastName', 'firstName', 'birthDate', 'diagnosis', 'station', 'urgency', 'lastModifiedAt'];
+    const sortableFields: SortField[] = ['lastName', 'firstName', 'birthDate', 'diagnosis', 'station', 'vollStation', 'urgency', 'lastModifiedAt'];
     if (!sortableFields.includes(field as SortField)) return;
     
     if (sortField === field) {
@@ -205,6 +209,15 @@ export const PatientTable: React.FC<PatientTableProps> = ({
                           patient.station ? (
                             <Badge variant={getStationBadgeVariant(patient.station)}>
                               {STATION_LABELS[patient.station]}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )
+                        )}
+                        {col.key === 'vollStation' && (
+                          patient.vollStation ? (
+                            <Badge variant="secondary">
+                              {VOLL_STATION_LABELS[patient.vollStation]}
                             </Badge>
                           ) : (
                             <span className="text-muted-foreground">-</span>
