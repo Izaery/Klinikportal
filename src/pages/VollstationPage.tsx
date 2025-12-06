@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { usePatients } from '@/contexts/PatientContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { PatientTable } from '@/components/patients/PatientTable';
-import { Patient } from '@/types';
+import { Patient, VOLL_STATION_LABELS } from '@/types';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -32,6 +32,7 @@ const VollstationPage: React.FC = () => {
     { key: 'lastName' as const, label: 'Nachname', sortable: true },
     { key: 'firstName' as const, label: 'Vorname', sortable: true },
     { key: 'birthDate' as const, label: 'Geburtsdatum', sortable: true },
+    { key: 'vollStation' as const, label: 'Station', sortable: true },
     { key: 'diagnosis' as const, label: 'Diagnose', sortable: true },
     { key: 'lastModifiedAt' as const, label: 'Geändert von', sortable: true },
     { key: 'actions' as const, label: 'Aktionen', width: '100px' },

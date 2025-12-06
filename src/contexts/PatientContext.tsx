@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { Patient, Station, AdmissionType } from '@/types';
+import { Patient, Station, VollStation, AdmissionType } from '@/types';
 import { useAuth } from './AuthContext';
 
 interface PatientContextType {
@@ -12,6 +12,7 @@ interface PatientContextType {
   getTeilstationPatients: () => Patient[];
   getOpenTeilstationPatients: () => Patient[];
   getStationPatients: (station: Station) => Patient[];
+  getVollStationPatients: (vollStation: VollStation) => Patient[];
   getRecentlyModified: (limit?: number) => Patient[];
 }
 
@@ -244,6 +245,10 @@ export const PatientProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return patients.filter(p => !p.archived && p.admissionType === 'TEILSTATION' && p.station === station);
   }, [patients]);
 
+  const getVollStationPatients = useCallback((vollStation: VollStation): Patient[] => {
+    return patients.filter(p => !p.archived && p.admissionType === 'VOLLSTATION' && p.vollStation === vollStation);
+  }, [patients]);
+
   const getRecentlyModified = useCallback((limit: number = 5): Patient[] => {
     return [...patients]
       .filter(p => !p.archived)
@@ -263,6 +268,7 @@ export const PatientProvider: React.FC<{ children: React.ReactNode }> = ({ child
         getTeilstationPatients,
         getOpenTeilstationPatients,
         getStationPatients,
+        getVollStationPatients,
         getRecentlyModified,
       }}
     >

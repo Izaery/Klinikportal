@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Save, AlertCircle } from 'lucide-react';
 import { usePatients } from '@/contexts/PatientContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { AdmissionType, Gender, Urgency, Station } from '@/types';
+import { AdmissionType, Gender, Urgency, Station, VollStation } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -44,6 +44,7 @@ const PatientFormPage: React.FC = () => {
   const [admissionType, setAdmissionType] = useState<AdmissionType>('TEILSTATION');
   const [urgency, setUrgency] = useState<Urgency | ''>('');
   const [station, setStation] = useState<Station | ''>('');
+  const [vollStation, setVollStation] = useState<VollStation | ''>('');
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -133,6 +134,7 @@ const PatientFormPage: React.FC = () => {
         admissionType,
         urgency: admissionType === 'TEILSTATION' ? (urgency as Urgency) : undefined,
         station: admissionType === 'TEILSTATION' && !isIntake && station ? (station as Station) : undefined,
+        vollStation: admissionType === 'VOLLSTATION' && vollStation ? (vollStation as VollStation) : undefined,
       });
 
       toast.success('Patient erfolgreich angelegt');
@@ -392,6 +394,8 @@ const PatientFormPage: React.FC = () => {
                   if (value === 'VOLLSTATION') {
                     setStation('');
                     setUrgency('');
+                  } else {
+                    setVollStation('');
                   }
                 }}
                 className="flex gap-6 mt-2"
@@ -406,6 +410,26 @@ const PatientFormPage: React.FC = () => {
                 </div>
               </RadioGroup>
             </div>
+
+            {admissionType === 'VOLLSTATION' && (
+              <div>
+                <Label htmlFor="vollStation">Station (Vollstation)</Label>
+                <Select value={vollStation || "none"} onValueChange={(value) => setVollStation(value === "none" ? '' : value as VollStation)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Station auswählen (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Keine Zuweisung</SelectItem>
+                    <SelectItem value="E">Station E</SelectItem>
+                    <SelectItem value="F">Station F</SelectItem>
+                    <SelectItem value="G">Station G</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Optional
+                </p>
+              </div>
+            )}
 
             {admissionType === 'TEILSTATION' && (
               <>

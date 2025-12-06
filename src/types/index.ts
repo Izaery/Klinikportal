@@ -11,6 +11,7 @@ export type UserRole =
 
 export type AdmissionType = 'VOLLSTATION' | 'TEILSTATION';
 export type Station = 'A' | 'B' | 'C' | 'D';
+export type VollStation = 'E' | 'F' | 'G';
 export type Gender = 'm' | 'w' | 'd';
 export type Urgency = 'elektiv' | 'dringend';
 
@@ -49,6 +50,7 @@ export interface Patient {
   admissionType: AdmissionType;
   urgency?: Urgency; // Pflicht bei Teilstation
   station?: Station; // Nur bei Teilstation
+  vollStation?: VollStation; // Optional bei Vollstation (E, F, G)
   
   // Metadaten
   createdBy: string;
@@ -100,4 +102,10 @@ export const STATION_LABELS: Record<Station, string> = {
   'B': 'Station B',
   'C': 'Station C',
   'D': 'Station D',
+};
+
+export const VOLL_STATION_LABELS: Record<VollStation, string> = {
+  'E': 'Station E',
+  'F': 'Station F',
+  'G': 'Station G',
 };
