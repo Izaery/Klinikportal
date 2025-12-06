@@ -47,6 +47,14 @@ const MOCK_USERS: Array<User & { password: string }> = [
   },
   {
     id: '4',
+    username: 'voll_view',
+    password: 'voll123',
+    displayName: 'Fr. Vollansicht',
+    roles: ['VOLL_VIEW'],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: '5',
     username: 'arzt_a',
     password: 'arzt123',
     displayName: 'Dr. Schmidt (A)',
@@ -54,7 +62,7 @@ const MOCK_USERS: Array<User & { password: string }> = [
     createdAt: new Date().toISOString(),
   },
   {
-    id: '5',
+    id: '6',
     username: 'arzt_b',
     password: 'arzt123',
     displayName: 'Dr. Müller (B)',
@@ -62,11 +70,19 @@ const MOCK_USERS: Array<User & { password: string }> = [
     createdAt: new Date().toISOString(),
   },
   {
-    id: '6',
-    username: 'voll_view',
-    password: 'voll123',
-    displayName: 'Fr. Vollansicht',
-    roles: ['VOLL_VIEW'],
+    id: '7',
+    username: 'arzt_c',
+    password: 'arzt123',
+    displayName: 'Dr. Meier (C)',
+    roles: ['arzt_c'],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: '8',
+    username: 'arzt_d',
+    password: 'arzt123',
+    displayName: 'Dr. Wagner (D)',
+    roles: ['arzt_d'],
     createdAt: new Date().toISOString(),
   },
 ];
