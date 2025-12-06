@@ -431,12 +431,12 @@ const PatientFormPage: React.FC = () => {
                 {!isIntake && (
                   <div>
                     <Label htmlFor="station">Station</Label>
-                    <Select value={station} onValueChange={(value) => setStation(value as Station | '')}>
+                    <Select value={station || "none"} onValueChange={(value) => setStation(value === "none" ? '' : value as Station)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Station auswählen (optional)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Keine Zuweisung</SelectItem>
+                        <SelectItem value="none">Keine Zuweisung</SelectItem>
                         <SelectItem value="A">Station A</SelectItem>
                         <SelectItem value="B">Station B</SelectItem>
                         <SelectItem value="C">Station C</SelectItem>
