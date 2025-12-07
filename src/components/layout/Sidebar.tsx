@@ -7,6 +7,7 @@ import {
   Users, 
   ClipboardList,
   Shield,
+  Archive,
   LogOut,
   ChevronDown
 } from 'lucide-react';
@@ -147,11 +148,27 @@ export const Sidebar: React.FC = () => {
             </Collapsible>
 
             {canAccessAdminCenter() && (
-              <NavItem 
-                to="/admin" 
-                icon={<Shield className="h-5 w-5" />} 
-                label="Admin-Center" 
-              />
+              <Collapsible>
+                <CollapsibleTrigger className="sidebar-item w-full justify-between">
+                  <div className="flex items-center gap-3">
+                    <Shield className="h-5 w-5" />
+                    <span>Admin-Center</span>
+                  </div>
+                  <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pl-4 space-y-1 mt-1">
+                  <NavItem 
+                    to="/admin" 
+                    icon={<Users className="h-5 w-5" />} 
+                    label="Benutzerverwaltung" 
+                  />
+                  <NavItem 
+                    to="/admin/archive" 
+                    icon={<Archive className="h-5 w-5" />} 
+                    label="Archiv" 
+                  />
+                </CollapsibleContent>
+              </Collapsible>
             )}
           </div>
         </nav>

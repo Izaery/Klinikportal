@@ -7,12 +7,14 @@ interface PatientContextType {
   addPatient: (patient: Omit<Patient, 'id' | 'createdAt' | 'createdBy' | 'createdByDisplayName' | 'lastModifiedAt' | 'lastModifiedBy' | 'lastModifiedByDisplayName' | 'archived'>) => void;
   updatePatient: (id: string, updates: Partial<Patient>) => void;
   archivePatient: (id: string) => void;
+  restorePatient: (id: string) => void;
   assignStation: (id: string, station: Station) => void;
   getVollstationPatients: () => Patient[];
   getTeilstationPatients: () => Patient[];
   getOpenTeilstationPatients: () => Patient[];
   getStationPatients: (station: Station) => Patient[];
   getVollStationPatients: (vollStation: VollStation) => Patient[];
+  getArchivedPatients: () => Patient[];
   getRecentlyModified: (limit?: number) => Patient[];
 }
 
@@ -110,6 +112,10 @@ export const PatientProvider: React.FC<{ children: React.ReactNode }> = ({ child
     updatePatient(id, { archived: true });
   }, [updatePatient]);
 
+  const restorePatient = useCallback((id: string) => {
+    updatePatient(id, { archived: false });
+  }, [updatePatient]);
+
   const assignStation = useCallback((id: string, station: Station) => {
     updatePatient(id, { station });
   }, [updatePatient]);
@@ -134,6 +140,10 @@ export const PatientProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return patients.filter(p => !p.archived && p.admissionType === 'VOLLSTATION' && p.vollStation === vollStation);
   }, [patients]);
 
+  const getArchivedPatients = useCallback((): Patient[] => {
+    return patients.filter(p => p.archived);
+  }, [patients]);
+
   const getRecentlyModified = useCallback((limit: number = 5): Patient[] => {
     return [...patients]
       .filter(p => !p.archived)
@@ -148,12 +158,14 @@ export const PatientProvider: React.FC<{ children: React.ReactNode }> = ({ child
         addPatient,
         updatePatient,
         archivePatient,
+        restorePatient,
         assignStation,
         getVollstationPatients,
         getTeilstationPatients,
         getOpenTeilstationPatients,
         getStationPatients,
         getVollStationPatients,
+        getArchivedPatients,
         getRecentlyModified,
       }}
     >
