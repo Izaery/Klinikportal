@@ -161,6 +161,7 @@ export const Sidebar: React.FC = () => {
                     to="/admin" 
                     icon={<Users className="h-5 w-5" />} 
                     label="Benutzerverwaltung" 
+                    end
                   />
                   <NavItem 
                     to="/admin/archive" 
