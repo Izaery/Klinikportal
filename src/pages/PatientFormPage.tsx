@@ -286,7 +286,7 @@ const PatientFormPage: React.FC = () => {
                 id="diagnosis"
                 value={diagnosis}
                 onChange={(e) => setDiagnosis(e.target.value)}
-                placeholder="ICD-10 Code und Beschreibung"
+                placeholder="Mögliche Diagnose"
                 className={errors.diagnosis ? 'border-destructive' : ''}
               />
               <InputError error={errors.diagnosis} />

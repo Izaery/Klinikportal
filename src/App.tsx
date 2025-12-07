@@ -17,6 +17,7 @@ import TeilstationOverviewPage from "./pages/TeilstationOverviewPage";
 import TeilstationOpenPage from "./pages/TeilstationOpenPage";
 import StationPage from "./pages/StationPage";
 import AdminCenterPage from "./pages/AdminCenterPage";
+import ArchivePage from "./pages/ArchivePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
                 <Route path="/teilstation/open" element={<TeilstationOpenPage />} />
                 <Route path="/station/:station" element={<StationPage />} />
                 <Route path="/admin" element={<AdminCenterPage />} />
+                <Route path="/admin/archive" element={<ArchivePage />} />
               </Route>
 
               {/* Catch-all */}
