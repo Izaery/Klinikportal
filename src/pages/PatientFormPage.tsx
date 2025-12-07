@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Save, AlertCircle } from 'lucide-react';
 import { usePatients } from '@/contexts/PatientContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,10 +20,13 @@ interface FormErrors {
 
 const PatientFormPage: React.FC = () => {
   const navigate = useNavigate();
-  const { addPatient, patients } = usePatients();
+  const { id } = useParams<{ id: string }>();
+  const { addPatient, updatePatient, patients } = usePatients();
   const { hasRole, hasAnyRole } = useAuth();
   
   const isIntake = hasRole('INTAKE') && !hasAnyRole(['ADMIN', 'MANAGER']);
+  const isEditMode = !!id;
+  const existingPatient = isEditMode ? patients.find(p => p.id === id) : undefined;
 
   // Form state
   const [firstName, setFirstName] = useState('');
@@ -48,6 +51,31 @@ const PatientFormPage: React.FC = () => {
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Load existing patient data for edit mode
+  useEffect(() => {
+    if (isEditMode && existingPatient) {
+      setFirstName(existingPatient.firstName);
+      setLastName(existingPatient.lastName);
+      setBirthDate(existingPatient.birthDate);
+      setGender(existingPatient.gender);
+      setCaseNumber(existingPatient.caseNumber || '');
+      setPhone(existingPatient.phone || '');
+      setEmail(existingPatient.email || '');
+      setCatchmentArea(existingPatient.catchmentArea);
+      setDiagnosis(existingPatient.diagnosis);
+      setExternalReferral(existingPatient.externalReferral);
+      setSubstanceAbuse(existingPatient.substanceAbuse);
+      setSubstanceAbuseDetails(existingPatient.substanceAbuseDetails || '');
+      setRelevantConditions(existingPatient.relevantConditions);
+      setRelevantConditionsDetails(existingPatient.relevantConditionsDetails || '');
+      setNotes(existingPatient.notes || '');
+      setAdmissionType(existingPatient.admissionType);
+      setUrgency(existingPatient.urgency || '');
+      setStation(existingPatient.station || '');
+      setVollStation(existingPatient.vollStation || '');
+    }
+  }, [isEditMode, existingPatient]);
 
   const validate = (): boolean => {
     const newErrors: FormErrors = {};
@@ -77,9 +105,9 @@ const PatientFormPage: React.FC = () => {
       newErrors.contact = 'Mindestens Telefon oder E-Mail ist erforderlich';
     }
 
-    // Fallnummer - eindeutig wenn angegeben
+    // Fallnummer - eindeutig wenn angegeben (ignoriere eigenen Patienten im Edit-Modus)
     if (caseNumber.trim()) {
-      const exists = patients.some(p => p.caseNumber === caseNumber.trim());
+      const exists = patients.some(p => p.caseNumber === caseNumber.trim() && p.id !== id);
       if (exists) {
         newErrors.caseNumber = 'Diese Fallnummer existiert bereits';
       }
@@ -115,7 +143,7 @@ const PatientFormPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      addPatient({
+      const patientData = {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         birthDate,
@@ -135,12 +163,18 @@ const PatientFormPage: React.FC = () => {
         urgency: admissionType === 'TEILSTATION' ? (urgency as Urgency) : undefined,
         station: admissionType === 'TEILSTATION' && !isIntake && station ? (station as Station) : undefined,
         vollStation: admissionType === 'VOLLSTATION' && vollStation ? (vollStation as VollStation) : undefined,
-      });
+      };
 
-      toast.success('Patient erfolgreich angelegt');
-      navigate('/dashboard');
+      if (isEditMode && id) {
+        updatePatient(id, patientData);
+        toast.success('Patient erfolgreich aktualisiert');
+      } else {
+        addPatient(patientData);
+        toast.success('Patient erfolgreich angelegt');
+      }
+      navigate(-1);
     } catch {
-      toast.error('Fehler beim Anlegen des Patienten');
+      toast.error(isEditMode ? 'Fehler beim Aktualisieren des Patienten' : 'Fehler beim Anlegen des Patienten');
     } finally {
       setIsSubmitting(false);
     }
@@ -154,8 +188,14 @@ const PatientFormPage: React.FC = () => {
   return (
     <div className="max-w-3xl mx-auto animate-fade-in">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Patient anlegen</h1>
-        <p className="text-muted-foreground mt-1">Erfassen Sie einen neuen Patienten</p>
+        <h1 className="text-2xl font-bold text-foreground">
+          {isEditMode ? 'Patient bearbeiten' : 'Patient anlegen'}
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          {isEditMode 
+            ? `${existingPatient?.firstName} ${existingPatient?.lastName} bearbeiten` 
+            : 'Erfassen Sie einen neuen Patienten'}
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
