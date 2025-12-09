@@ -5,16 +5,18 @@ import {
   ArrowUp, 
   ArrowDown,
   Edit,
-  Trash2
+  Trash2,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
-import { Patient, Station, VollStation, URGENCY_LABELS, STATION_LABELS, VOLL_STATION_LABELS } from '@/types';
+import { Patient, Station, VollStation, URGENCY_LABELS, STATION_LABELS, VOLL_STATION_LABELS, GENDER_LABELS } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
-type SortField = 'lastName' | 'firstName' | 'birthDate' | 'diagnosis' | 'station' | 'vollStation' | 'urgency' | 'lastModifiedAt';
+type SortField = 'lastName' | 'firstName' | 'birthDate' | 'diagnosis' | 'station' | 'vollStation' | 'urgency' | 'lastModifiedAt' | 'preInterviewDate' | 'admissionDate';
 type SortDirection = 'asc' | 'desc';
 
 interface Column {
@@ -47,6 +49,7 @@ export const PatientTable: React.FC<PatientTableProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('lastName');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [expandedPatientId, setExpandedPatientId] = useState<string | null>(null);
 
   const filteredAndSortedPatients = useMemo(() => {
     let filtered = patients;
@@ -100,6 +103,14 @@ export const PatientTable: React.FC<PatientTableProps> = ({
           aVal = new Date(a.lastModifiedAt).getTime();
           bVal = new Date(b.lastModifiedAt).getTime();
           break;
+        case 'preInterviewDate':
+          aVal = a.preInterviewDate ? new Date(a.preInterviewDate).getTime() : 0;
+          bVal = b.preInterviewDate ? new Date(b.preInterviewDate).getTime() : 0;
+          break;
+        case 'admissionDate':
+          aVal = a.admissionDate ? new Date(a.admissionDate).getTime() : 0;
+          bVal = b.admissionDate ? new Date(b.admissionDate).getTime() : 0;
+          break;
       }
 
       if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
@@ -111,7 +122,7 @@ export const PatientTable: React.FC<PatientTableProps> = ({
   }, [patients, searchTerm, sortField, sortDirection]);
 
   const handleSort = (field: string) => {
-    const sortableFields: SortField[] = ['lastName', 'firstName', 'birthDate', 'diagnosis', 'station', 'vollStation', 'urgency', 'lastModifiedAt'];
+    const sortableFields: SortField[] = ['lastName', 'firstName', 'birthDate', 'diagnosis', 'station', 'vollStation', 'urgency', 'lastModifiedAt', 'preInterviewDate', 'admissionDate'];
     if (!sortableFields.includes(field as SortField)) return;
     
     if (sortField === field) {
@@ -134,6 +145,10 @@ export const PatientTable: React.FC<PatientTableProps> = ({
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  const toggleExpanded = (patientId: string) => {
+    setExpandedPatientId(expandedPatientId === patientId ? null : patientId);
   };
 
   const SortIcon: React.FC<{ field: string }> = ({ field }) => {
@@ -172,6 +187,7 @@ export const PatientTable: React.FC<PatientTableProps> = ({
           <table className="clinic-table">
             <thead>
               <tr>
+                <th style={{ width: '40px' }}></th>
                 {columns.map((col) => (
                   <th 
                     key={col.key} 
@@ -190,114 +206,244 @@ export const PatientTable: React.FC<PatientTableProps> = ({
             <tbody>
               {filteredAndSortedPatients.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length} className="text-center py-8 text-muted-foreground">
+                  <td colSpan={columns.length + 1} className="text-center py-8 text-muted-foreground">
                     {emptyMessage}
                   </td>
                 </tr>
               ) : (
                 filteredAndSortedPatients.map((patient) => (
-                  <tr key={patient.id} className="animate-fade-in">
-                    {columns.map((col) => (
-                      <td key={col.key}>
-                        {col.key === 'lastName' && patient.lastName}
-                        {col.key === 'firstName' && patient.firstName}
-                        {col.key === 'birthDate' && formatDate(patient.birthDate)}
-                        {col.key === 'diagnosis' && (
-                          <span className="text-sm">{patient.diagnosis || '-'}</span>
-                        )}
-                        {col.key === 'station' && (
-                          patient.station ? (
-                            <Badge variant={getStationBadgeVariant(patient.station)}>
-                              {STATION_LABELS[patient.station]}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )
-                        )}
-                        {col.key === 'vollStation' && (
-                          patient.vollStation ? (
-                            <Badge variant="secondary">
-                              {VOLL_STATION_LABELS[patient.vollStation]}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )
-                        )}
-                        {col.key === 'urgency' && (
-                          patient.urgency ? (
-                            <Badge variant={patient.urgency === 'dringend' ? 'urgent' : 'elective'}>
-                              {URGENCY_LABELS[patient.urgency]}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )
-                        )}
-                        {col.key === 'lastModifiedAt' && (
-                          <div className="text-sm">
-                            <div>{patient.lastModifiedByDisplayName}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {formatDateTime(patient.lastModifiedAt)}
-                            </div>
-                          </div>
-                        )}
-                        {col.key === 'stationAssign' && showStationAssign && canAssignStation() && (
-                          <div className="flex gap-1">
-                            <Button 
-                              size="xs" 
-                              variant="stationA"
-                              onClick={() => onAssignStation?.(patient, 'A')}
-                            >
-                              A
-                            </Button>
-                            <Button 
-                              size="xs" 
-                              variant="stationB"
-                              onClick={() => onAssignStation?.(patient, 'B')}
-                            >
-                              B
-                            </Button>
-                            <Button 
-                              size="xs" 
-                              variant="stationC"
-                              onClick={() => onAssignStation?.(patient, 'C')}
-                            >
-                              C
-                            </Button>
-                            <Button 
-                              size="xs" 
-                              variant="stationD"
-                              onClick={() => onAssignStation?.(patient, 'D')}
-                            >
-                              D
-                            </Button>
-                          </div>
-                        )}
-                        {col.key === 'actions' && (
-                          <div className="flex gap-2">
-                            {canEditPatients() && onEdit && (
-                              <Button 
-                                size="icon" 
-                                variant="ghost"
-                                onClick={() => onEdit(patient)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            )}
-                            {canDeletePatients() && onDelete && (
-                              <Button 
-                                size="icon" 
-                                variant="ghost"
-                                className="text-destructive hover:text-destructive"
-                                onClick={() => onDelete(patient)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
+                  <React.Fragment key={patient.id}>
+                    <tr 
+                      className={cn(
+                        "animate-fade-in cursor-pointer hover:bg-muted/50 transition-colors",
+                        expandedPatientId === patient.id && "bg-muted/30"
+                      )}
+                      onClick={() => toggleExpanded(patient.id)}
+                    >
+                      <td className="text-center">
+                        {expandedPatientId === patient.id ? (
+                          <ChevronUp className="h-4 w-4 mx-auto text-muted-foreground" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 mx-auto text-muted-foreground" />
                         )}
                       </td>
-                    ))}
-                  </tr>
+                      {columns.map((col) => (
+                        <td key={col.key} onClick={(e) => col.key === 'actions' || col.key === 'stationAssign' ? e.stopPropagation() : undefined}>
+                          {col.key === 'lastName' && patient.lastName}
+                          {col.key === 'firstName' && patient.firstName}
+                          {col.key === 'birthDate' && formatDate(patient.birthDate)}
+                          {col.key === 'diagnosis' && (
+                            <span className="text-sm">{patient.diagnosis || '-'}</span>
+                          )}
+                          {col.key === 'station' && (
+                            patient.station ? (
+                              <Badge variant={getStationBadgeVariant(patient.station)}>
+                                {STATION_LABELS[patient.station]}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )
+                          )}
+                          {col.key === 'vollStation' && (
+                            patient.vollStation ? (
+                              <Badge variant="secondary">
+                                {VOLL_STATION_LABELS[patient.vollStation]}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )
+                          )}
+                          {col.key === 'urgency' && (
+                            patient.urgency ? (
+                              <Badge variant={patient.urgency === 'dringend' ? 'urgent' : 'elective'}>
+                                {URGENCY_LABELS[patient.urgency]}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )
+                          )}
+                          {col.key === 'preInterviewDate' && (
+                            patient.preInterviewDate ? (
+                              <span className="text-sm">{formatDate(patient.preInterviewDate)}</span>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )
+                          )}
+                          {col.key === 'admissionDate' && (
+                            patient.admissionDate ? (
+                              <span className="text-sm">{formatDate(patient.admissionDate)}</span>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )
+                          )}
+                          {col.key === 'lastModifiedAt' && (
+                            <div className="text-sm">
+                              <div>{patient.lastModifiedByDisplayName}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {formatDateTime(patient.lastModifiedAt)}
+                              </div>
+                            </div>
+                          )}
+                          {col.key === 'stationAssign' && showStationAssign && canAssignStation() && (
+                            <div className="flex gap-1">
+                              <Button 
+                                size="xs" 
+                                variant="stationA"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onAssignStation?.(patient, 'A');
+                                }}
+                              >
+                                A
+                              </Button>
+                              <Button 
+                                size="xs" 
+                                variant="stationB"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onAssignStation?.(patient, 'B');
+                                }}
+                              >
+                                B
+                              </Button>
+                              <Button 
+                                size="xs" 
+                                variant="stationC"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onAssignStation?.(patient, 'C');
+                                }}
+                              >
+                                C
+                              </Button>
+                              <Button 
+                                size="xs" 
+                                variant="stationD"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onAssignStation?.(patient, 'D');
+                                }}
+                              >
+                                D
+                              </Button>
+                            </div>
+                          )}
+                          {col.key === 'actions' && (
+                            <div className="flex gap-2">
+                              {canEditPatients() && onEdit && (
+                                <Button 
+                                  size="icon" 
+                                  variant="ghost"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onEdit(patient);
+                                  }}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {canDeletePatients() && onDelete && (
+                                <Button 
+                                  size="icon" 
+                                  variant="ghost"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDelete(patient);
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                    {/* Expanded Details Row */}
+                    {expandedPatientId === patient.id && (
+                      <tr className="bg-muted/20">
+                        <td colSpan={columns.length + 1} className="p-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <h4 className="font-semibold mb-2 text-foreground">Stammdaten</h4>
+                              <div className="space-y-1 text-muted-foreground">
+                                <p><span className="font-medium text-foreground">Name:</span> {patient.lastName}, {patient.firstName}</p>
+                                <p><span className="font-medium text-foreground">Geburtsdatum:</span> {formatDate(patient.birthDate)}</p>
+                                <p><span className="font-medium text-foreground">Geschlecht:</span> {GENDER_LABELS[patient.gender]}</p>
+                                {patient.caseNumber && (
+                                  <p><span className="font-medium text-foreground">Fallnummer:</span> {patient.caseNumber}</p>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <h4 className="font-semibold mb-2 text-foreground">Kontakt</h4>
+                              <div className="space-y-1 text-muted-foreground">
+                                {patient.phone && <p><span className="font-medium text-foreground">Telefon:</span> {patient.phone}</p>}
+                                {patient.email && <p><span className="font-medium text-foreground">E-Mail:</span> {patient.email}</p>}
+                                {!patient.phone && !patient.email && <p>Keine Kontaktdaten</p>}
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <h4 className="font-semibold mb-2 text-foreground">Medizinische Daten</h4>
+                              <div className="space-y-1 text-muted-foreground">
+                                <p><span className="font-medium text-foreground">Diagnose:</span> {patient.diagnosis}</p>
+                                <p><span className="font-medium text-foreground">Einzugsgebiet:</span> {patient.catchmentArea ? 'Ja' : 'Nein'}</p>
+                                <p><span className="font-medium text-foreground">Externe Einweisung:</span> {patient.externalReferral ? 'Ja' : 'Nein'}</p>
+                                {patient.substanceAbuse && (
+                                  <p><span className="font-medium text-foreground">Suchtmittel:</span> {patient.substanceAbuseDetails}</p>
+                                )}
+                                {patient.relevantConditions && (
+                                  <p><span className="font-medium text-foreground">Erkrankungen:</span> {patient.relevantConditionsDetails}</p>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <h4 className="font-semibold mb-2 text-foreground">Aufnahme</h4>
+                              <div className="space-y-1 text-muted-foreground">
+                                <p><span className="font-medium text-foreground">Aufnahmeart:</span> {patient.admissionType === 'VOLLSTATION' ? 'Vollstation' : 'Teilstation'}</p>
+                                {patient.urgency && (
+                                  <p><span className="font-medium text-foreground">Dringlichkeit:</span> {URGENCY_LABELS[patient.urgency]}</p>
+                                )}
+                                {patient.station && (
+                                  <p><span className="font-medium text-foreground">Station:</span> {STATION_LABELS[patient.station]}</p>
+                                )}
+                                {patient.vollStation && (
+                                  <p><span className="font-medium text-foreground">Station:</span> {VOLL_STATION_LABELS[patient.vollStation]}</p>
+                                )}
+                                {patient.preInterviewDate && (
+                                  <p><span className="font-medium text-foreground">Vorgesprächstermin:</span> {formatDate(patient.preInterviewDate)}</p>
+                                )}
+                                {patient.admissionDate && (
+                                  <p><span className="font-medium text-foreground">Aufnahmedatum:</span> {formatDate(patient.admissionDate)}</p>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {patient.notes && (
+                              <div className="md:col-span-2">
+                                <h4 className="font-semibold mb-2 text-foreground">Anmerkungen</h4>
+                                <p className="text-muted-foreground">{patient.notes}</p>
+                              </div>
+                            )}
+                            
+                            <div>
+                              <h4 className="font-semibold mb-2 text-foreground">Metadaten</h4>
+                              <div className="space-y-1 text-muted-foreground">
+                                <p><span className="font-medium text-foreground">Erstellt von:</span> {patient.createdByDisplayName}</p>
+                                <p><span className="font-medium text-foreground">Erstellt am:</span> {formatDateTime(patient.createdAt)}</p>
+                                <p><span className="font-medium text-foreground">Geändert von:</span> {patient.lastModifiedByDisplayName}</p>
+                                <p><span className="font-medium text-foreground">Geändert am:</span> {formatDateTime(patient.lastModifiedAt)}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))
               )}
             </tbody>
