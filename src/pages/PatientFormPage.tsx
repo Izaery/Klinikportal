@@ -53,6 +53,7 @@ const PatientFormPage: React.FC = () => {
   const [urgency, setUrgency] = useState<Urgency | ''>('');
   const [station, setStation] = useState<Station | ''>('');
   const [vollStation, setVollStation] = useState<VollStation | ''>('');
+  const [secondaryStation, setSecondaryStation] = useState<VollStation | ''>('');
   const [preInterviewDate, setPreInterviewDate] = useState<Date | undefined>(undefined);
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -80,6 +81,7 @@ const PatientFormPage: React.FC = () => {
       setUrgency(existingPatient.urgency || '');
       setStation(existingPatient.station || '');
       setVollStation(existingPatient.vollStation || '');
+      setSecondaryStation(existingPatient.secondaryStation || '');
       if (existingPatient.preInterviewDate) {
         setPreInterviewDate(new Date(existingPatient.preInterviewDate));
       }
@@ -150,6 +152,11 @@ const PatientFormPage: React.FC = () => {
       newErrors.urgency = 'Dringlichkeit ist bei Teilstation erforderlich';
     }
 
+    // Vollstation ist Pflicht bei Aufnahmeart Vollstation
+    if (admissionType === 'VOLLSTATION' && !isIntake && !vollStation) {
+      newErrors.vollStation = 'Station (Vollstation) ist erforderlich';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -185,6 +192,7 @@ const PatientFormPage: React.FC = () => {
         urgency: admissionType === 'TEILSTATION' ? (urgency as Urgency) : undefined,
         station: admissionType === 'TEILSTATION' && !isIntake && station ? (station as Station) : undefined,
         vollStation: admissionType === 'VOLLSTATION' && !isIntake && vollStation ? (vollStation as VollStation) : undefined,
+        secondaryStation: admissionType === 'VOLLSTATION' && !isIntake && secondaryStation ? (secondaryStation as VollStation) : undefined,
         preInterviewDate: preInterviewDate ? preInterviewDate.toISOString() : undefined,
       };
 
@@ -521,23 +529,57 @@ const PatientFormPage: React.FC = () => {
             </div>
 
             {admissionType === 'VOLLSTATION' && !isIntake && (
-              <div>
-                <Label htmlFor="vollStation">Station (Vollstation)</Label>
-                <Select value={vollStation || "none"} onValueChange={(value) => setVollStation(value === "none" ? '' : value as VollStation)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Station auswählen (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Keine Zuweisung</SelectItem>
-                    <SelectItem value="E">Station E</SelectItem>
-                    <SelectItem value="F">Station F</SelectItem>
-                    <SelectItem value="G">Station G</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Optional
-                </p>
-              </div>
+              <>
+                <div>
+                  <Label htmlFor="vollStation">Station (Vollstation) *</Label>
+                  <Select 
+                    value={vollStation || "none"} 
+                    onValueChange={(value) => {
+                      const newValue = value === "none" ? '' : value as VollStation;
+                      setVollStation(newValue);
+                      // Reset secondary station if it matches the new primary station
+                      if (secondaryStation === newValue) {
+                        setSecondaryStation('');
+                      }
+                    }}
+                  >
+                    <SelectTrigger className={errors.vollStation ? 'border-destructive' : ''}>
+                      <SelectValue placeholder="Station auswählen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Bitte wählen</SelectItem>
+                      <SelectItem value="E">Station E</SelectItem>
+                      <SelectItem value="F">Station F</SelectItem>
+                      <SelectItem value="G">Station G</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <InputError error={errors.vollStation} />
+                </div>
+
+                <div>
+                  <Label htmlFor="secondaryStation">Sekundäre Station</Label>
+                  <Select 
+                    value={secondaryStation || "none"} 
+                    onValueChange={(value) => setSecondaryStation(value === "none" ? '' : value as VollStation)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Station auswählen (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Keine Zuweisung</SelectItem>
+                      {(['E', 'F', 'G'] as VollStation[])
+                        .filter(s => s !== vollStation)
+                        .map(s => (
+                          <SelectItem key={s} value={s}>Station {s}</SelectItem>
+                        ))
+                      }
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Optional - weitere Station auswählen
+                  </p>
+                </div>
+              </>
             )}
 
             {admissionType === 'TEILSTATION' && (
@@ -600,7 +642,7 @@ const PatientFormPage: React.FC = () => {
           <Button 
             type="button" 
             variant="outline"
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate(-1)}
           >
             Abbrechen
           </Button>
