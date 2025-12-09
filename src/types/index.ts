@@ -51,6 +51,8 @@ export interface Patient {
   urgency?: Urgency; // Pflicht bei Teilstation
   station?: Station; // Nur bei Teilstation
   vollStation?: VollStation; // Optional bei Vollstation (E, F, G)
+  preInterviewDate?: string; // Vorgesprächstermin - Pflicht bei Anlage
+  admissionDate?: string; // Aufnahmedatum - Pflicht bei Stationszuweisung
   
   // Metadaten
   createdBy: string;

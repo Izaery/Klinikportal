@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Save, AlertCircle } from 'lucide-react';
+import { Save, AlertCircle, CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { de } from 'date-fns/locale';
 import { usePatients } from '@/contexts/PatientContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { AdmissionType, Gender, Urgency, Station, VollStation } from '@/types';
@@ -12,7 +14,10 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface FormErrors {
   [key: string]: string;
@@ -48,6 +53,7 @@ const PatientFormPage: React.FC = () => {
   const [urgency, setUrgency] = useState<Urgency | ''>('');
   const [station, setStation] = useState<Station | ''>('');
   const [vollStation, setVollStation] = useState<VollStation | ''>('');
+  const [preInterviewDate, setPreInterviewDate] = useState<Date | undefined>(undefined);
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -74,6 +80,9 @@ const PatientFormPage: React.FC = () => {
       setUrgency(existingPatient.urgency || '');
       setStation(existingPatient.station || '');
       setVollStation(existingPatient.vollStation || '');
+      if (existingPatient.preInterviewDate) {
+        setPreInterviewDate(new Date(existingPatient.preInterviewDate));
+      }
     }
   }, [isEditMode, existingPatient]);
 
@@ -85,6 +94,19 @@ const PatientFormPage: React.FC = () => {
     if (!lastName.trim()) newErrors.lastName = 'Nachname ist erforderlich';
     if (!birthDate) newErrors.birthDate = 'Geburtsdatum ist erforderlich';
     if (!diagnosis.trim()) newErrors.diagnosis = 'Diagnose ist erforderlich';
+
+    // Vorgesprächstermin ist Pflicht
+    if (!preInterviewDate) {
+      newErrors.preInterviewDate = 'Vorgesprächstermin ist erforderlich';
+    } else {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const selectedDate = new Date(preInterviewDate);
+      selectedDate.setHours(0, 0, 0, 0);
+      if (selectedDate < today) {
+        newErrors.preInterviewDate = 'Vorgesprächstermin darf nicht in der Vergangenheit liegen';
+      }
+    }
 
     // Geburtsdatum Validierung
     if (birthDate) {
@@ -162,7 +184,8 @@ const PatientFormPage: React.FC = () => {
         admissionType,
         urgency: admissionType === 'TEILSTATION' ? (urgency as Urgency) : undefined,
         station: admissionType === 'TEILSTATION' && !isIntake && station ? (station as Station) : undefined,
-        vollStation: admissionType === 'VOLLSTATION' && vollStation ? (vollStation as VollStation) : undefined,
+        vollStation: admissionType === 'VOLLSTATION' && !isIntake && vollStation ? (vollStation as VollStation) : undefined,
+        preInterviewDate: preInterviewDate ? preInterviewDate.toISOString() : undefined,
       };
 
       if (isEditMode && id) {
@@ -184,6 +207,10 @@ const PatientFormPage: React.FC = () => {
     if (!error) return null;
     return <p className="text-sm text-destructive mt-1">{error}</p>;
   };
+
+  // Minimum date for pre-interview (today)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   return (
     <div className="max-w-3xl mx-auto animate-fade-in">
@@ -425,6 +452,41 @@ const PatientFormPage: React.FC = () => {
           <h2 className="form-section-title">Aufnahme</h2>
           
           <div className="space-y-4">
+            {/* Vorgesprächstermin */}
+            <div>
+              <Label>Vorgesprächstermin *</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal mt-2",
+                      !preInterviewDate && "text-muted-foreground",
+                      errors.preInterviewDate && "border-destructive"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {preInterviewDate ? format(preInterviewDate, "PPP", { locale: de }) : <span>Datum auswählen</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={preInterviewDate}
+                    onSelect={setPreInterviewDate}
+                    disabled={(date) => date < today}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                    locale={de}
+                  />
+                </PopoverContent>
+              </Popover>
+              <InputError error={errors.preInterviewDate} />
+              <p className="text-xs text-muted-foreground mt-1">
+                Muss am heutigen Tag oder in der Zukunft liegen
+              </p>
+            </div>
+
             <div>
               <Label>Aufnahmeart *</Label>
               <RadioGroup
@@ -441,17 +503,24 @@ const PatientFormPage: React.FC = () => {
                 className="flex gap-6 mt-2"
               >
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="VOLLSTATION" id="admission-voll" />
-                  <Label htmlFor="admission-voll" className="font-normal">Vollstation</Label>
+                  <RadioGroupItem value="VOLLSTATION" id="admission-voll" disabled={isIntake} />
+                  <Label htmlFor="admission-voll" className={cn("font-normal", isIntake && "text-muted-foreground")}>
+                    Vollstation
+                  </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="TEILSTATION" id="admission-teil" />
                   <Label htmlFor="admission-teil" className="font-normal">Teilstation</Label>
                 </div>
               </RadioGroup>
+              {isIntake && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Als Aufnahme-Mitarbeiter können Sie nur Teilstationen zuweisen
+                </p>
+              )}
             </div>
 
-            {admissionType === 'VOLLSTATION' && (
+            {admissionType === 'VOLLSTATION' && !isIntake && (
               <div>
                 <Label htmlFor="vollStation">Station (Vollstation)</Label>
                 <Select value={vollStation || "none"} onValueChange={(value) => setVollStation(value === "none" ? '' : value as VollStation)}>
@@ -537,7 +606,7 @@ const PatientFormPage: React.FC = () => {
           </Button>
           <Button type="submit" disabled={isSubmitting}>
             <Save className="mr-2 h-4 w-4" />
-            {isSubmitting ? 'Wird gespeichert...' : 'Patient anlegen'}
+            {isSubmitting ? 'Wird gespeichert...' : (isEditMode ? 'Speichern' : 'Patient anlegen')}
           </Button>
         </div>
       </form>
