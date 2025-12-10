@@ -55,6 +55,7 @@ const PatientFormPage: React.FC = () => {
   const [vollStation, setVollStation] = useState<VollStation | ''>('');
   const [secondaryStation, setSecondaryStation] = useState<VollStation | ''>('');
   const [preInterviewDate, setPreInterviewDate] = useState<Date | undefined>(new Date());
+  const [admissionDate, setAdmissionDate] = useState<Date | undefined>();
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -84,6 +85,9 @@ const PatientFormPage: React.FC = () => {
       setSecondaryStation(existingPatient.secondaryStation || '');
       if (existingPatient.preInterviewDate) {
         setPreInterviewDate(new Date(existingPatient.preInterviewDate));
+      }
+      if (existingPatient.admissionDate) {
+        setAdmissionDate(new Date(existingPatient.admissionDate));
       }
     }
   }, [isEditMode, existingPatient]);
@@ -197,6 +201,7 @@ const PatientFormPage: React.FC = () => {
         preInterviewDate: admissionType === 'VOLLSTATION' 
           ? new Date().toISOString() 
           : (preInterviewDate ? preInterviewDate.toISOString() : undefined),
+        admissionDate: admissionDate ? admissionDate.toISOString() : undefined,
       };
 
       if (isEditMode && id) {
@@ -614,6 +619,36 @@ const PatientFormPage: React.FC = () => {
                   </Select>
                   <p className="text-xs text-muted-foreground mt-1">
                     Optional - weitere Station auswählen
+                  </p>
+                </div>
+
+                <div>
+                  <Label>Aufnahmedatum</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !admissionDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {admissionDate ? format(admissionDate, 'dd.MM.yyyy', { locale: de }) : 'Datum auswählen (optional)'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={admissionDate}
+                        onSelect={setAdmissionDate}
+                        locale={de}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Optional - geplantes Aufnahmedatum
                   </p>
                 </div>
               </>
