@@ -54,7 +54,7 @@ const PatientFormPage: React.FC = () => {
   const [station, setStation] = useState<Station | ''>('');
   const [vollStation, setVollStation] = useState<VollStation | ''>('');
   const [secondaryStation, setSecondaryStation] = useState<VollStation | ''>('');
-  const [preInterviewDate, setPreInterviewDate] = useState<Date | undefined>(undefined);
+  const [preInterviewDate, setPreInterviewDate] = useState<Date | undefined>(new Date());
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -100,12 +100,13 @@ const PatientFormPage: React.FC = () => {
     // Vorgesprächstermin ist Pflicht
     if (!preInterviewDate) {
       newErrors.preInterviewDate = 'Vorgesprächstermin ist erforderlich';
-    } else {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+    } else if (admissionType === 'TEILSTATION') {
+      // Nur bei Teilstation: Datum muss heute oder in der Zukunft liegen
+      const todayDate = new Date();
+      todayDate.setHours(0, 0, 0, 0);
       const selectedDate = new Date(preInterviewDate);
       selectedDate.setHours(0, 0, 0, 0);
-      if (selectedDate < today) {
+      if (selectedDate < todayDate) {
         newErrors.preInterviewDate = 'Vorgesprächstermin darf nicht in der Vergangenheit liegen';
       }
     }
@@ -193,7 +194,9 @@ const PatientFormPage: React.FC = () => {
         station: admissionType === 'TEILSTATION' && !isIntake && station ? (station as Station) : undefined,
         vollStation: admissionType === 'VOLLSTATION' && !isIntake && vollStation ? (vollStation as VollStation) : undefined,
         secondaryStation: admissionType === 'VOLLSTATION' && !isIntake && secondaryStation ? (secondaryStation as VollStation) : undefined,
-        preInterviewDate: preInterviewDate ? preInterviewDate.toISOString() : undefined,
+        preInterviewDate: admissionType === 'VOLLSTATION' 
+          ? new Date().toISOString() 
+          : (preInterviewDate ? preInterviewDate.toISOString() : undefined),
       };
 
       if (isEditMode && id) {
@@ -463,36 +466,50 @@ const PatientFormPage: React.FC = () => {
             {/* Vorgesprächstermin */}
             <div>
               <Label>Vorgesprächstermin *</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal mt-2",
-                      !preInterviewDate && "text-muted-foreground",
-                      errors.preInterviewDate && "border-destructive"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {preInterviewDate ? format(preInterviewDate, "PPP", { locale: de }) : <span>Datum auswählen</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={preInterviewDate}
-                    onSelect={setPreInterviewDate}
-                    disabled={(date) => date < today}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                    locale={de}
-                  />
-                </PopoverContent>
-              </Popover>
-              <InputError error={errors.preInterviewDate} />
-              <p className="text-xs text-muted-foreground mt-1">
-                Muss am heutigen Tag oder in der Zukunft liegen
-              </p>
+              {admissionType === 'VOLLSTATION' ? (
+                <>
+                  <div className="w-full p-3 mt-2 rounded-md border border-input bg-muted text-muted-foreground">
+                    <CalendarIcon className="mr-2 h-4 w-4 inline" />
+                    {format(new Date(), "PPP", { locale: de })}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Bei Vollstation wird automatisch das heutige Datum verwendet
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal mt-2",
+                          !preInterviewDate && "text-muted-foreground",
+                          errors.preInterviewDate && "border-destructive"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {preInterviewDate ? format(preInterviewDate, "PPP", { locale: de }) : <span>Datum auswählen</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={preInterviewDate}
+                        onSelect={setPreInterviewDate}
+                        disabled={(date) => date < today}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                        locale={de}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <InputError error={errors.preInterviewDate} />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Muss am heutigen Tag oder in der Zukunft liegen
+                  </p>
+                </>
+              )}
             </div>
 
             <div>
