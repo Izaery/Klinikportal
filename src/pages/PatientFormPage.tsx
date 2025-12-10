@@ -147,9 +147,9 @@ const PatientFormPage: React.FC = () => {
       newErrors.relevantConditionsDetails = 'Bitte Details zu relevanten Erkrankungen angeben';
     }
 
-    // Dringlichkeit bei Teilstation
-    if (admissionType === 'TEILSTATION' && !urgency) {
-      newErrors.urgency = 'Dringlichkeit ist bei Teilstation erforderlich';
+    // Dringlichkeit ist immer Pflicht
+    if (!urgency) {
+      newErrors.urgency = 'Dringlichkeit ist erforderlich';
     }
 
     // Vollstation ist Pflicht bei Aufnahmeart Vollstation
@@ -189,7 +189,7 @@ const PatientFormPage: React.FC = () => {
         relevantConditionsDetails: relevantConditions ? relevantConditionsDetails.trim() : undefined,
         notes: notes.trim() || undefined,
         admissionType,
-        urgency: admissionType === 'TEILSTATION' ? (urgency as Urgency) : undefined,
+        urgency: urgency as Urgency,
         station: admissionType === 'TEILSTATION' && !isIntake && station ? (station as Station) : undefined,
         vollStation: admissionType === 'VOLLSTATION' && !isIntake && vollStation ? (vollStation as VollStation) : undefined,
         secondaryStation: admissionType === 'VOLLSTATION' && !isIntake && secondaryStation ? (secondaryStation as VollStation) : undefined,
@@ -503,9 +503,9 @@ const PatientFormPage: React.FC = () => {
                   setAdmissionType(value as AdmissionType);
                   if (value === 'VOLLSTATION') {
                     setStation('');
-                    setUrgency('');
                   } else {
                     setVollStation('');
+                    setSecondaryStation('');
                   }
                 }}
                 className="flex gap-6 mt-2"
@@ -526,6 +526,26 @@ const PatientFormPage: React.FC = () => {
                   Als Aufnahme-Mitarbeiter können Sie nur Teilstationen zuweisen
                 </p>
               )}
+            </div>
+
+            {/* Dringlichkeit - immer anzeigen */}
+            <div>
+              <Label>Dringlichkeit *</Label>
+              <RadioGroup
+                value={urgency}
+                onValueChange={(value) => setUrgency(value as Urgency)}
+                className="flex gap-6 mt-2"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="elektiv" id="urgency-elektiv" />
+                  <Label htmlFor="urgency-elektiv" className="font-normal">Elektiv</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="dringend" id="urgency-dringend" />
+                  <Label htmlFor="urgency-dringend" className="font-normal">Dringend</Label>
+                </div>
+              </RadioGroup>
+              <InputError error={errors.urgency} />
             </div>
 
             {admissionType === 'VOLLSTATION' && !isIntake && (
@@ -584,25 +604,6 @@ const PatientFormPage: React.FC = () => {
 
             {admissionType === 'TEILSTATION' && (
               <>
-                <div>
-                  <Label>Dringlichkeit *</Label>
-                  <RadioGroup
-                    value={urgency}
-                    onValueChange={(value) => setUrgency(value as Urgency)}
-                    className="flex gap-6 mt-2"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="elektiv" id="urgency-elektiv" />
-                      <Label htmlFor="urgency-elektiv" className="font-normal">Elektiv</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="dringend" id="urgency-dringend" />
-                      <Label htmlFor="urgency-dringend" className="font-normal">Dringend</Label>
-                    </div>
-                  </RadioGroup>
-                  <InputError error={errors.urgency} />
-                </div>
-
                 {!isIntake && (
                   <div>
                     <Label htmlFor="station">Station</Label>

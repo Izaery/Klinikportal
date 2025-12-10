@@ -120,9 +120,9 @@ const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Vollstation Belegung */}
+      {/* Vollstation Warteliste */}
       <div className="clinic-card">
-        <h2 className="text-lg font-semibold text-foreground mb-4">Vollstation Belegung</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-4">Vollstation Warteliste</h2>
         <div className="grid grid-cols-3 gap-4">
           {(['E', 'F', 'G'] as const).map((station) => (
             <div 
@@ -142,9 +142,9 @@ const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Teilstation Belegung */}
+      {/* Teilstation Warteliste */}
       <div className="clinic-card">
-        <h2 className="text-lg font-semibold text-foreground mb-4">Teilstation Belegung</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-4">Teilstation Warteliste</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {(['A', 'B', 'C', 'D'] as const).map((station) => (
             <div 
