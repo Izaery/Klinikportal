@@ -192,7 +192,16 @@ const TeilstationOpenPage: React.FC = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmAssignStation}>
+            <AlertDialogAction 
+              onClick={(e) => {
+                if (!admissionDate) {
+                  e.preventDefault();
+                  setAdmissionDateError('Aufnahmedatum ist erforderlich');
+                  return;
+                }
+                confirmAssignStation();
+              }}
+            >
               Zuweisen
             </AlertDialogAction>
           </AlertDialogFooter>
