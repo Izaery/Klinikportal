@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
-type SortField = 'lastName' | 'firstName' | 'birthDate' | 'diagnosis' | 'station' | 'vollStation' | 'urgency' | 'lastModifiedAt' | 'preInterviewDate' | 'admissionDate';
+type SortField = 'lastName' | 'firstName' | 'birthDate' | 'diagnosis' | 'station' | 'vollStation' | 'urgency' | 'lastModifiedAt' | 'preInterviewDate' | 'admissionDate' | 'waitingTime';
 type SortDirection = 'asc' | 'desc';
 
 interface Column {
@@ -111,6 +111,10 @@ export const PatientTable: React.FC<PatientTableProps> = ({
           aVal = a.admissionDate ? new Date(a.admissionDate).getTime() : 0;
           bVal = b.admissionDate ? new Date(b.admissionDate).getTime() : 0;
           break;
+        case 'waitingTime':
+          aVal = a.preInterviewDate ? new Date().getTime() - new Date(a.preInterviewDate).getTime() : 0;
+          bVal = b.preInterviewDate ? new Date().getTime() - new Date(b.preInterviewDate).getTime() : 0;
+          break;
       }
 
       if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
@@ -122,7 +126,7 @@ export const PatientTable: React.FC<PatientTableProps> = ({
   }, [patients, searchTerm, sortField, sortDirection]);
 
   const handleSort = (field: string) => {
-    const sortableFields: SortField[] = ['lastName', 'firstName', 'birthDate', 'diagnosis', 'station', 'vollStation', 'urgency', 'lastModifiedAt', 'preInterviewDate', 'admissionDate'];
+    const sortableFields: SortField[] = ['lastName', 'firstName', 'birthDate', 'diagnosis', 'station', 'vollStation', 'urgency', 'lastModifiedAt', 'preInterviewDate', 'admissionDate', 'waitingTime'];
     if (!sortableFields.includes(field as SortField)) return;
     
     if (sortField === field) {

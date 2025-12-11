@@ -29,7 +29,7 @@ const VollstationPage: React.FC = () => {
   const patients = getVollstationPatients();
 
   const columns = [
-    { key: 'waitingTime' as const, label: 'Wartezeit', sortable: false, width: '100px' },
+    { key: 'waitingTime' as const, label: 'Wartezeit', sortable: true, width: '100px' },
     { key: 'lastName' as const, label: 'Nachname', sortable: true },
     { key: 'firstName' as const, label: 'Vorname', sortable: true },
     { key: 'birthDate' as const, label: 'Geburtsdatum', sortable: true },
