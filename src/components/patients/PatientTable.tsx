@@ -147,6 +147,22 @@ export const PatientTable: React.FC<PatientTableProps> = ({
     });
   };
 
+  const calculateWaitingDays = (preInterviewDate: string | undefined): number | null => {
+    if (!preInterviewDate) return null;
+    const start = new Date(preInterviewDate);
+    const today = new Date();
+    const diffTime = today.getTime() - start.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const getWaitingBadgeClass = (days: number | null): string => {
+    if (days === null) return '';
+    if (days < 30) return 'bg-green-500 text-white';
+    if (days <= 60) return 'bg-yellow-500 text-black';
+    return 'bg-red-500 text-white';
+  };
+
   const toggleExpanded = (patientId: string) => {
     setExpandedPatientId(expandedPatientId === patientId ? null : patientId);
   };
@@ -261,6 +277,17 @@ export const PatientTable: React.FC<PatientTableProps> = ({
                             ) : (
                               <span className="text-muted-foreground">-</span>
                             )
+                          )}
+                          {col.key === 'waitingTime' && (
+                            (() => {
+                              const days = calculateWaitingDays(patient.preInterviewDate);
+                              if (days === null) return <span className="text-muted-foreground">-</span>;
+                              return (
+                                <Badge className={cn('font-medium', getWaitingBadgeClass(days))}>
+                                  {days} {days === 1 ? 'Tag' : 'Tage'}
+                                </Badge>
+                              );
+                            })()
                           )}
                           {col.key === 'preInterviewDate' && (
                             patient.preInterviewDate ? (
