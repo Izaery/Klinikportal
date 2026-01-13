@@ -110,7 +110,7 @@ export const Sidebar: React.FC = () => {
                 <NavItem 
                   to="/teilstation/open" 
                   icon={<span className="w-5 h-5 flex items-center justify-center text-xs">📋</span>} 
-                  label="Offen" 
+                  label="Vorgespräche" 
                 />
                 {canSeeStationTabs && (
                   <>

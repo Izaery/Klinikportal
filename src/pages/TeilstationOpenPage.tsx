@@ -30,8 +30,8 @@ const TeilstationOpenPage: React.FC = () => {
   const navigate = useNavigate();
   const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
   const [stationAssignment, setStationAssignment] = useState<{ patient: Patient; station: Station } | null>(null);
-  const [admissionDate, setAdmissionDate] = useState<Date | undefined>(undefined);
-  const [admissionDateError, setAdmissionDateError] = useState<string>('');
+  const [preInterviewDate, setPreInterviewDate] = useState<Date | undefined>(undefined);
+  const [preInterviewDateError, setPreInterviewDateError] = useState<string>('');
 
   const patients = getOpenTeilstationPatients();
 
@@ -57,35 +57,35 @@ const TeilstationOpenPage: React.FC = () => {
 
   const handleAssignStation = (patient: Patient, station: Station) => {
     setStationAssignment({ patient, station });
-    setAdmissionDate(undefined);
-    setAdmissionDateError('');
+    setPreInterviewDate(undefined);
+    setPreInterviewDateError('');
   };
 
   const confirmAssignStation = () => {
-    if (!admissionDate) {
-      setAdmissionDateError('Aufnahmedatum ist erforderlich');
+    if (!preInterviewDate) {
+      setPreInterviewDateError('Vorgesprächstermin ist erforderlich');
       return;
     }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const selectedDate = new Date(admissionDate);
+    const selectedDate = new Date(preInterviewDate);
     selectedDate.setHours(0, 0, 0, 0);
 
     if (selectedDate < today) {
-      setAdmissionDateError('Aufnahmedatum darf nicht in der Vergangenheit liegen');
+      setPreInterviewDateError('Vorgesprächstermin darf nicht in der Vergangenheit liegen');
       return;
     }
 
     if (stationAssignment) {
       updatePatient(stationAssignment.patient.id, { 
         station: stationAssignment.station,
-        admissionDate: admissionDate.toISOString()
+        preInterviewDate: preInterviewDate.toISOString()
       });
       toast.success(`${stationAssignment.patient.lastName}, ${stationAssignment.patient.firstName} wurde Station ${stationAssignment.station} zugewiesen`);
       setStationAssignment(null);
-      setAdmissionDate(undefined);
-      setAdmissionDateError('');
+      setPreInterviewDate(undefined);
+      setPreInterviewDateError('');
     }
   };
 
@@ -103,7 +103,7 @@ const TeilstationOpenPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Teilstation - Offen</h1>
+        <h1 className="text-2xl font-bold text-foreground">Teilstation - Vorgespräche</h1>
         <p className="text-muted-foreground mt-1">
           Patienten ohne Station ({patients.length})
         </p>
@@ -139,8 +139,8 @@ const TeilstationOpenPage: React.FC = () => {
 
       <AlertDialog open={!!stationAssignment} onOpenChange={() => {
         setStationAssignment(null);
-        setAdmissionDate(undefined);
-        setAdmissionDateError('');
+        setPreInterviewDate(undefined);
+        setPreInterviewDateError('');
       }}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -153,26 +153,26 @@ const TeilstationOpenPage: React.FC = () => {
                 </p>
                 
                 <div className="space-y-2">
-                  <Label>Aufnahmedatum *</Label>
+                  <Label>Vorgesprächstermin *</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
                         className={cn(
                           "w-full justify-start text-left font-normal",
-                          !admissionDate && "text-muted-foreground",
-                          admissionDateError && "border-destructive"
+                          !preInterviewDate && "text-muted-foreground",
+                          preInterviewDateError && "border-destructive"
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {admissionDate ? format(admissionDate, "PPP", { locale: de }) : <span>Datum auswählen</span>}
+                        {preInterviewDate ? format(preInterviewDate, "PPP", { locale: de }) : <span>Datum auswählen</span>}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
-                        selected={admissionDate}
-                        onSelect={setAdmissionDate}
+                        selected={preInterviewDate}
+                        onSelect={setPreInterviewDate}
                         disabled={(date) => date < today}
                         initialFocus
                         className={cn("p-3 pointer-events-auto")}
@@ -180,8 +180,8 @@ const TeilstationOpenPage: React.FC = () => {
                       />
                     </PopoverContent>
                   </Popover>
-                  {admissionDateError && (
-                    <p className="text-sm text-destructive">{admissionDateError}</p>
+                  {preInterviewDateError && (
+                    <p className="text-sm text-destructive">{preInterviewDateError}</p>
                   )}
                   <p className="text-xs text-muted-foreground">
                     Muss am heutigen Tag oder in der Zukunft liegen
@@ -194,9 +194,9 @@ const TeilstationOpenPage: React.FC = () => {
             <AlertDialogCancel>Abbrechen</AlertDialogCancel>
             <AlertDialogAction 
               onClick={(e) => {
-                if (!admissionDate) {
+                if (!preInterviewDate) {
                   e.preventDefault();
-                  setAdmissionDateError('Aufnahmedatum ist erforderlich');
+                  setPreInterviewDateError('Vorgesprächstermin ist erforderlich');
                   return;
                 }
                 confirmAssignStation();
