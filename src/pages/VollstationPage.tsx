@@ -32,6 +32,7 @@ const VollstationPage: React.FC = () => {
     { key: 'waitingTime' as const, label: 'Wartezeit', sortable: true, width: '100px' },
     { key: 'lastName' as const, label: 'Nachname', sortable: true },
     { key: 'firstName' as const, label: 'Vorname', sortable: true },
+    { key: 'mondayCall' as const, label: 'Montagsanruf', sortable: true, width: '120px' },
     { key: 'birthDate' as const, label: 'Geburtsdatum', sortable: true },
     { key: 'urgency' as const, label: 'Dringlichkeit', sortable: true },
     { key: 'admissionDate' as const, label: 'Aufnahmedatum', sortable: true },

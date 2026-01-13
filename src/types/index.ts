@@ -52,6 +52,7 @@ export interface Patient {
   station?: Station; // Nur bei Teilstation
   vollStation?: VollStation; // Pflicht bei Vollstation (E, F, G)
   secondaryStation?: VollStation; // Optional bei Vollstation - sekundäre Station
+  mondayCall?: boolean; // Montagsanruf - nur bei Vollstation
   preInterviewDate?: string; // Vorgesprächstermin - Pflicht bei Anlage
   admissionDate?: string; // Aufnahmedatum - Pflicht bei Stationszuweisung
   

@@ -54,6 +54,7 @@ const PatientFormPage: React.FC = () => {
   const [station, setStation] = useState<Station | ''>('');
   const [vollStation, setVollStation] = useState<VollStation | ''>('');
   const [secondaryStation, setSecondaryStation] = useState<VollStation | ''>('');
+  const [mondayCall, setMondayCall] = useState(false);
   const [preInterviewDate, setPreInterviewDate] = useState<Date | undefined>(new Date());
   const [admissionDate, setAdmissionDate] = useState<Date | undefined>();
 
@@ -83,6 +84,7 @@ const PatientFormPage: React.FC = () => {
       setStation(existingPatient.station || '');
       setVollStation(existingPatient.vollStation || '');
       setSecondaryStation(existingPatient.secondaryStation || '');
+      setMondayCall(existingPatient.mondayCall || false);
       if (existingPatient.preInterviewDate) {
         setPreInterviewDate(new Date(existingPatient.preInterviewDate));
       }
@@ -200,6 +202,7 @@ const PatientFormPage: React.FC = () => {
         station: admissionType === 'TEILSTATION' && !isIntake && station ? (station as Station) : undefined,
         vollStation: admissionType === 'VOLLSTATION' && !isIntake && vollStation ? (vollStation as VollStation) : undefined,
         secondaryStation: admissionType === 'VOLLSTATION' && !isIntake && secondaryStation ? (secondaryStation as VollStation) : undefined,
+        mondayCall: admissionType === 'VOLLSTATION' ? mondayCall : undefined,
         preInterviewDate: isIntake 
           ? undefined 
           : admissionType === 'VOLLSTATION' 
@@ -555,6 +558,19 @@ const PatientFormPage: React.FC = () => {
                 </p>
               )}
             </div>
+
+            {admissionType === 'VOLLSTATION' && (
+              <div className="flex items-center justify-between p-3 rounded-lg border border-border">
+                <Label htmlFor="mondayCall" className="font-normal cursor-pointer">
+                  Montagsanruf
+                </Label>
+                <Switch
+                  id="mondayCall"
+                  checked={mondayCall}
+                  onCheckedChange={setMondayCall}
+                />
+              </div>
+            )}
 
             {/* Dringlichkeit - immer anzeigen */}
             <div>
