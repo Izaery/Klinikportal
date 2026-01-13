@@ -43,7 +43,7 @@ const ArchivePage: React.FC = () => {
           : 'Vollstation (ohne Zuweisung)'
         : patientToRestore.station 
           ? `Teilstation ${STATION_LABELS[patientToRestore.station]}`
-          : 'Teilstation Offen';
+          : 'Teilstation Vorgespräche';
       toast.success(`Patient "${patientToRestore.firstName} ${patientToRestore.lastName}" wurde wiederhergestellt (${stationInfo})`);
       setPatientToRestore(null);
     }
@@ -61,7 +61,7 @@ const ArchivePage: React.FC = () => {
     } else {
       return patient.station 
         ? <Badge>{STATION_LABELS[patient.station]}</Badge>
-        : <Badge variant="outline">Offen</Badge>;
+        : <Badge variant="outline">Vorgespräche</Badge>;
     }
   };
 
@@ -168,7 +168,7 @@ const ArchivePage: React.FC = () => {
                       : ' Vollstation (ohne Zuweisung)'
                     : patientToRestore.station 
                       ? ` Teilstation ${STATION_LABELS[patientToRestore.station]}`
-                      : ' Teilstation Offen'
+                      : ' Teilstation Vorgespräche'
                   } aufgenommen.
                 </span>
               )}

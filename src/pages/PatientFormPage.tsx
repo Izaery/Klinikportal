@@ -101,17 +101,19 @@ const PatientFormPage: React.FC = () => {
     if (!birthDate) newErrors.birthDate = 'Geburtsdatum ist erforderlich';
     if (!diagnosis.trim()) newErrors.diagnosis = 'Diagnose ist erforderlich';
 
-    // Vorgesprächstermin ist Pflicht
-    if (!preInterviewDate) {
-      newErrors.preInterviewDate = 'Vorgesprächstermin ist erforderlich';
-    } else if (admissionType === 'TEILSTATION') {
-      // Nur bei Teilstation: Datum muss heute oder in der Zukunft liegen
-      const todayDate = new Date();
-      todayDate.setHours(0, 0, 0, 0);
-      const selectedDate = new Date(preInterviewDate);
-      selectedDate.setHours(0, 0, 0, 0);
-      if (selectedDate < todayDate) {
-        newErrors.preInterviewDate = 'Vorgesprächstermin darf nicht in der Vergangenheit liegen';
+    // Vorgesprächstermin ist nur Pflicht für nicht-Aufnahme-Mitarbeiter
+    if (!isIntake) {
+      if (!preInterviewDate) {
+        newErrors.preInterviewDate = 'Vorgesprächstermin ist erforderlich';
+      } else if (admissionType === 'TEILSTATION') {
+        // Nur bei Teilstation: Datum muss heute oder in der Zukunft liegen
+        const todayDate = new Date();
+        todayDate.setHours(0, 0, 0, 0);
+        const selectedDate = new Date(preInterviewDate);
+        selectedDate.setHours(0, 0, 0, 0);
+        if (selectedDate < todayDate) {
+          newErrors.preInterviewDate = 'Vorgesprächstermin darf nicht in der Vergangenheit liegen';
+        }
       }
     }
 
@@ -198,9 +200,11 @@ const PatientFormPage: React.FC = () => {
         station: admissionType === 'TEILSTATION' && !isIntake && station ? (station as Station) : undefined,
         vollStation: admissionType === 'VOLLSTATION' && !isIntake && vollStation ? (vollStation as VollStation) : undefined,
         secondaryStation: admissionType === 'VOLLSTATION' && !isIntake && secondaryStation ? (secondaryStation as VollStation) : undefined,
-        preInterviewDate: admissionType === 'VOLLSTATION' 
-          ? new Date().toISOString() 
-          : (preInterviewDate ? preInterviewDate.toISOString() : undefined),
+        preInterviewDate: isIntake 
+          ? undefined 
+          : admissionType === 'VOLLSTATION' 
+            ? new Date().toISOString() 
+            : (preInterviewDate ? preInterviewDate.toISOString() : undefined),
         admissionDate: admissionDate ? admissionDate.toISOString() : undefined,
       };
 
@@ -468,54 +472,56 @@ const PatientFormPage: React.FC = () => {
           <h2 className="form-section-title">Aufnahme</h2>
           
           <div className="space-y-4">
-            {/* Vorgesprächstermin */}
-            <div>
-              <Label>Vorgesprächstermin *</Label>
-              {admissionType === 'VOLLSTATION' ? (
-                <>
-                  <div className="w-full p-3 mt-2 rounded-md border border-input bg-muted text-muted-foreground">
-                    <CalendarIcon className="mr-2 h-4 w-4 inline" />
-                    {format(new Date(), "PPP", { locale: de })}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Bei Vollstation wird automatisch das heutige Datum verwendet
-                  </p>
-                </>
-              ) : (
-                <>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal mt-2",
-                          !preInterviewDate && "text-muted-foreground",
-                          errors.preInterviewDate && "border-destructive"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {preInterviewDate ? format(preInterviewDate, "PPP", { locale: de }) : <span>Datum auswählen</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={preInterviewDate}
-                        onSelect={setPreInterviewDate}
-                        disabled={(date) => date < today}
-                        initialFocus
-                        className={cn("p-3 pointer-events-auto")}
-                        locale={de}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <InputError error={errors.preInterviewDate} />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Muss am heutigen Tag oder in der Zukunft liegen
-                  </p>
-                </>
-              )}
-            </div>
+            {/* Vorgesprächstermin - nur für nicht-Aufnahme-Mitarbeiter */}
+            {!isIntake && (
+              <div>
+                <Label>Vorgesprächstermin *</Label>
+                {admissionType === 'VOLLSTATION' ? (
+                  <>
+                    <div className="w-full p-3 mt-2 rounded-md border border-input bg-muted text-muted-foreground">
+                      <CalendarIcon className="mr-2 h-4 w-4 inline" />
+                      {format(new Date(), "PPP", { locale: de })}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Bei Vollstation wird automatisch das heutige Datum verwendet
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal mt-2",
+                            !preInterviewDate && "text-muted-foreground",
+                            errors.preInterviewDate && "border-destructive"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {preInterviewDate ? format(preInterviewDate, "PPP", { locale: de }) : <span>Datum auswählen</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={preInterviewDate}
+                          onSelect={setPreInterviewDate}
+                          disabled={(date) => date < today}
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                          locale={de}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <InputError error={errors.preInterviewDate} />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Muss am heutigen Tag oder in der Zukunft liegen
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
 
             <div>
               <Label>Aufnahmeart *</Label>
