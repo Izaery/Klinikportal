@@ -36,12 +36,11 @@ const TeilstationOpenPage: React.FC = () => {
   const patients = getOpenTeilstationPatients();
 
   const columns = [
+    { key: 'waitingTime' as const, label: 'Wartezeit', sortable: true, width: '100px' },
     { key: 'lastName', label: 'Nachname', sortable: true },
     { key: 'firstName', label: 'Vorname', sortable: true },
     { key: 'birthDate', label: 'Geburtsdatum', sortable: true },
     { key: 'diagnosis', label: 'Diagnose', sortable: true },
-    { key: 'preInterviewDate', label: 'Vorgesprächstermin', sortable: true },
-    { key: 'urgency', label: 'Dringlichkeit', sortable: true },
     { key: 'lastModifiedAt', label: 'Geändert von', sortable: true },
     ...(canAssignStation() ? [{ key: 'stationAssign', label: 'Station zuweisen', width: '180px' }] : []),
     ...((canEditPatients() || canDeletePatients()) ? [{ key: 'actions', label: 'Aktionen', width: '100px' }] : []),
