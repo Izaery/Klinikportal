@@ -3,15 +3,16 @@ import {
   Users, 
   Building2, 
   ClipboardList, 
-  Clock,
-  TrendingUp
+  Clock
 } from 'lucide-react';
 import { usePatients } from '@/contexts/PatientContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { STATION_LABELS, URGENCY_LABELS, VOLL_STATION_LABELS } from '@/types';
+import { useNavigate } from 'react-router-dom';
 
 const DashboardPage: React.FC = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { 
     getVollstationPatients, 
@@ -88,11 +89,11 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Offen */}
+        {/* Vorgespräche */}
         <div className="stat-card">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Offen (ohne Station)</p>
+              <p className="text-sm font-medium text-muted-foreground">Vorgespräche</p>
               <p className="text-3xl font-bold text-foreground mt-1">{openCount}</p>
             </div>
             <div className="h-12 w-12 rounded-lg bg-warning/10 flex items-center justify-center">
@@ -104,19 +105,6 @@ const DashboardPage: React.FC = () => {
               {openCount} Patient(en) warten auf Zuweisung
             </p>
           )}
-        </div>
-
-        {/* Gesamt */}
-        <div className="stat-card">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Gesamt Patienten</p>
-              <p className="text-3xl font-bold text-foreground mt-1">{vollstationCount + teilstationCount}</p>
-            </div>
-            <div className="h-12 w-12 rounded-lg bg-success/10 flex items-center justify-center">
-              <TrendingUp className="h-6 w-6 text-success" />
-            </div>
-          </div>
         </div>
       </div>
 
@@ -149,7 +137,8 @@ const DashboardPage: React.FC = () => {
           {(['A', 'B', 'C', 'D'] as const).map((station) => (
             <div 
               key={station} 
-              className="p-4 rounded-lg border border-border bg-muted/30 text-center"
+              className="p-4 rounded-lg border border-border bg-muted/30 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => navigate(`/station/${station}`)}
             >
               <Badge 
                 variant={`station${station}` as 'stationA' | 'stationB' | 'stationC' | 'stationD'}
