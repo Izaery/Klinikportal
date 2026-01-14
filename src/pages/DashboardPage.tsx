@@ -82,7 +82,7 @@ const DashboardPage: React.FC = () => {
         {/* Teilstation Gesamt */}
         <div 
           className="stat-card cursor-pointer hover:bg-muted/50 transition-colors"
-          onClick={() => navigate('/teilstation')}
+          onClick={() => navigate('/teilstation/overview')}
         >
           <div className="flex items-center justify-between">
             <div>
