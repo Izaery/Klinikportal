@@ -62,9 +62,12 @@ const DashboardPage: React.FC = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Vollstation */}
-        <div className="stat-card">
+        <div 
+          className="stat-card cursor-pointer hover:bg-muted/50 transition-colors"
+          onClick={() => navigate('/vollstation')}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Vollstation</p>
@@ -77,7 +80,10 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Teilstation Gesamt */}
-        <div className="stat-card">
+        <div 
+          className="stat-card cursor-pointer hover:bg-muted/50 transition-colors"
+          onClick={() => navigate('/teilstation')}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Teilstation Gesamt</p>
@@ -90,7 +96,10 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Vorgespräche */}
-        <div className="stat-card">
+        <div 
+          className="stat-card cursor-pointer hover:bg-muted/50 transition-colors"
+          onClick={() => navigate('/teilstation/open')}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Vorgespräche</p>
