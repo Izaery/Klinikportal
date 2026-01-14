@@ -143,8 +143,8 @@ const PatientFormPage: React.FC = () => {
       newErrors.relevantConditionsDetails = 'Bitte Details zu relevanten Erkrankungen angeben';
     }
 
-    // Dringlichkeit ist immer Pflicht
-    if (!urgency) {
+    // Dringlichkeit ist nur bei Vollstation Pflicht
+    if (admissionType === 'VOLLSTATION' && !urgency) {
       newErrors.urgency = 'Dringlichkeit ist erforderlich';
     }
 
@@ -185,7 +185,7 @@ const PatientFormPage: React.FC = () => {
         relevantConditionsDetails: relevantConditions ? relevantConditionsDetails.trim() : undefined,
         notes: notes.trim() || undefined,
         admissionType,
-        urgency: urgency as Urgency,
+        urgency: admissionType === 'VOLLSTATION' ? (urgency as Urgency) : undefined,
         station: admissionType === 'TEILSTATION' && !isIntake && station ? (station as Station) : undefined,
         vollStation: admissionType === 'VOLLSTATION' && !isIntake && vollStation ? (vollStation as VollStation) : undefined,
         secondaryStation: admissionType === 'VOLLSTATION' && !isIntake && secondaryStation ? (secondaryStation as VollStation) : undefined,
@@ -520,25 +520,27 @@ const PatientFormPage: React.FC = () => {
               </div>
             )}
 
-            {/* Dringlichkeit - immer anzeigen */}
-            <div>
-              <Label>Dringlichkeit *</Label>
-              <RadioGroup
-                value={urgency}
-                onValueChange={(value) => setUrgency(value as Urgency)}
-                className="flex gap-6 mt-2"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="elektiv" id="urgency-elektiv" />
-                  <Label htmlFor="urgency-elektiv" className="font-normal">Elektiv</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="dringend" id="urgency-dringend" />
-                  <Label htmlFor="urgency-dringend" className="font-normal">Dringend</Label>
-                </div>
-              </RadioGroup>
-              <InputError error={errors.urgency} />
-            </div>
+            {/* Dringlichkeit - nur bei Vollstation anzeigen */}
+            {admissionType === 'VOLLSTATION' && (
+              <div>
+                <Label>Dringlichkeit *</Label>
+                <RadioGroup
+                  value={urgency}
+                  onValueChange={(value) => setUrgency(value as Urgency)}
+                  className="flex gap-6 mt-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="elektiv" id="urgency-elektiv" />
+                    <Label htmlFor="urgency-elektiv" className="font-normal">Elektiv</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="dringend" id="urgency-dringend" />
+                    <Label htmlFor="urgency-dringend" className="font-normal">Dringend</Label>
+                  </div>
+                </RadioGroup>
+                <InputError error={errors.urgency} />
+              </div>
+            )}
 
             {admissionType === 'VOLLSTATION' && !isIntake && (
               <>
