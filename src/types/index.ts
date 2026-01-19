@@ -7,7 +7,11 @@ export type UserRole =
   | 'arzt_a' 
   | 'arzt_b' 
   | 'arzt_c' 
-  | 'arzt_d';
+  | 'arzt_d'
+  | 'pflege_a'
+  | 'pflege_b'
+  | 'pflege_c'
+  | 'pflege_d';
 
 export type AdmissionType = 'VOLLSTATION' | 'TEILSTATION';
 export type Station = 'A' | 'B' | 'C' | 'D';
@@ -88,6 +92,10 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   'arzt_b': 'Arzt Station B',
   'arzt_c': 'Arzt Station C',
   'arzt_d': 'Arzt Station D',
+  'pflege_a': 'Pflege Station A',
+  'pflege_b': 'Pflege Station B',
+  'pflege_c': 'Pflege Station C',
+  'pflege_d': 'Pflege Station D',
 };
 
 export const GENDER_LABELS: Record<Gender, string> = {

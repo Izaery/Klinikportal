@@ -19,6 +19,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import ChangePasswordDialog from '@/components/ChangePasswordDialog';
 
 interface NavItemProps {
   to: string;
@@ -43,7 +44,7 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, end }) => {
 };
 
 export const Sidebar: React.FC = () => {
-  const { user, logout, canViewVollstation, canAccessAdminCenter, getVisibleStations, hasAnyRole } = useAuth();
+  const { user, logout, canViewVollstation, canAccessAdminCenter, getVisibleStations, hasAnyRole, isReadOnly } = useAuth();
   const location = useLocation();
   const [teilstationOpen, setTeilstationOpen] = React.useState(
     location.pathname.includes('/teilstation') || location.pathname.includes('/station')
@@ -51,7 +52,7 @@ export const Sidebar: React.FC = () => {
 
   const visibleStations = getVisibleStations();
   const canSeeStationTabs = visibleStations.length > 0 && !hasAnyRole(['INTAKE']);
-
+  const readOnly = isReadOnly();
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-sidebar border-r border-sidebar-border">
       <div className="flex h-full flex-col">
@@ -75,11 +76,13 @@ export const Sidebar: React.FC = () => {
               label="Dashboard" 
             />
             
-            <NavItem 
-              to="/patient/new" 
-              icon={<UserPlus className="h-5 w-5" />} 
-              label="Patient anlegen" 
-            />
+            {!readOnly && (
+              <NavItem 
+                to="/patient/new" 
+                icon={<UserPlus className="h-5 w-5" />} 
+                label="Patient anlegen" 
+              />
+            )}
 
             {canViewVollstation() && (
               <NavItem 
@@ -179,15 +182,21 @@ export const Sidebar: React.FC = () => {
           <div className="mb-3 px-2">
             <p className="text-sm font-medium text-sidebar-foreground">{user?.displayName}</p>
             <p className="text-xs text-sidebar-foreground/60">@{user?.username}</p>
+            {readOnly && (
+              <p className="text-xs text-amber-600 mt-1">Nur-Lesen-Modus</p>
+            )}
           </div>
-          <Button 
-            variant="ghost" 
-            className="w-full justify-start text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent"
-            onClick={logout}
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Abmelden
-          </Button>
+          <div className="space-y-1">
+            <ChangePasswordDialog />
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+              onClick={logout}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Abmelden
+            </Button>
+          </div>
         </div>
       </div>
     </aside>
