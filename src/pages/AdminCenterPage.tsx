@@ -36,9 +36,17 @@ const INITIAL_USERS: User[] = [
   { id: '4', username: 'arzt_a', displayName: 'Dr. Schmidt (A)', roles: ['arzt_a'], createdAt: '2024-01-04T00:00:00Z' },
   { id: '5', username: 'arzt_b', displayName: 'Dr. Müller (B)', roles: ['arzt_b'], createdAt: '2024-01-05T00:00:00Z' },
   { id: '6', username: 'voll_view', displayName: 'Fr. Vollansicht', roles: ['VOLL_VIEW'], createdAt: '2024-01-06T00:00:00Z' },
+  { id: '7', username: 'pflege_a', displayName: 'Sr. Krause (A)', roles: ['pflege_a'], createdAt: '2024-01-07T00:00:00Z' },
+  { id: '8', username: 'pflege_b', displayName: 'Sr. Fischer (B)', roles: ['pflege_b'], createdAt: '2024-01-08T00:00:00Z' },
+  { id: '9', username: 'pflege_c', displayName: 'Sr. Weber (C)', roles: ['pflege_c'], createdAt: '2024-01-09T00:00:00Z' },
+  { id: '10', username: 'pflege_d', displayName: 'Sr. Becker (D)', roles: ['pflege_d'], createdAt: '2024-01-10T00:00:00Z' },
 ];
 
-const ALL_ROLES: UserRole[] = ['ADMIN', 'MANAGER', 'INTAKE', 'VOLL_VIEW', 'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d'];
+const ALL_ROLES: UserRole[] = [
+  'ADMIN', 'MANAGER', 'INTAKE', 'VOLL_VIEW', 
+  'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d',
+  'pflege_a', 'pflege_b', 'pflege_c', 'pflege_d'
+];
 
 const AdminCenterPage: React.FC = () => {
   const { canAccessAdminCenter } = useAuth();
