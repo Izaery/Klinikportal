@@ -84,7 +84,7 @@ const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({ trigger }) 
     }}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button variant="outline" size="sm" className="w-full justify-start gap-2 text-sidebar-foreground border-sidebar-border hover:bg-sidebar-accent">
+          <Button variant="outline" size="sm" className="w-full justify-start gap-2 bg-sidebar-primary text-sidebar-primary-foreground border-sidebar-primary hover:bg-sidebar-primary/90">
             <Key className="h-4 w-4" />
             Kennwort ändern
           </Button>
