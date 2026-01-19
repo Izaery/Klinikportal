@@ -6,6 +6,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
+  changePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
   hasRole: (role: UserRole) => boolean;
   hasAnyRole: (roles: UserRole[]) => boolean;
   canViewVollstation: () => boolean;
@@ -15,9 +16,18 @@ interface AuthContextType {
   canViewStation: (station: Station) => boolean;
   canAccessAdminCenter: () => boolean;
   getVisibleStations: () => Station[];
+  isReadOnly: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Pflege-Rollen Mapping (read-only per station)
+export const PFLEGE_ROLES: Record<Station, UserRole> = {
+  'A': 'pflege_a',
+  'B': 'pflege_b',
+  'C': 'pflege_c',
+  'D': 'pflege_d',
+};
 
 // Mock users for demonstration
 const MOCK_USERS: Array<User & { password: string }> = [
@@ -85,6 +95,38 @@ const MOCK_USERS: Array<User & { password: string }> = [
     roles: ['arzt_d'],
     createdAt: new Date().toISOString(),
   },
+  {
+    id: '9',
+    username: 'pflege_a',
+    password: 'pflege123',
+    displayName: 'Sr. Krause (A)',
+    roles: ['pflege_a'],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: '10',
+    username: 'pflege_b',
+    password: 'pflege123',
+    displayName: 'Sr. Fischer (B)',
+    roles: ['pflege_b'],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: '11',
+    username: 'pflege_c',
+    password: 'pflege123',
+    displayName: 'Sr. Weber (C)',
+    roles: ['pflege_c'],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: '12',
+    username: 'pflege_d',
+    password: 'pflege123',
+    displayName: 'Sr. Becker (D)',
+    roles: ['pflege_d'],
+    createdAt: new Date().toISOString(),
+  },
 ];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -107,6 +149,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   }, []);
 
+  const changePassword = useCallback(async (oldPassword: string, newPassword: string): Promise<boolean> => {
+    if (!user) return false;
+    
+    // Find the user in mock data
+    const mockUser = MOCK_USERS.find(u => u.id === user.id);
+    if (!mockUser) return false;
+    
+    // Verify old password
+    if (mockUser.password !== oldPassword) return false;
+    
+    // Update password in mock data (in a real app this would be an API call)
+    mockUser.password = newPassword;
+    return true;
+  }, [user]);
+
   const hasRole = useCallback((role: UserRole): boolean => {
     return user?.roles.includes(role) ?? false;
   }, [user]);
@@ -115,26 +172,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return roles.some(role => user?.roles.includes(role));
   }, [user]);
 
+  // Check if user has only read-only roles (Pflege)
+  const isReadOnly = useCallback((): boolean => {
+    if (!user) return true;
+    // If user has any of the editing roles, they're not read-only
+    const editingRoles: UserRole[] = ['ADMIN', 'MANAGER', 'INTAKE', 'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d'];
+    return !editingRoles.some(role => user.roles.includes(role));
+  }, [user]);
+
   const canViewVollstation = useCallback((): boolean => {
     return hasAnyRole(['ADMIN', 'MANAGER', 'VOLL_VIEW']);
   }, [hasAnyRole]);
 
   const canEditPatients = useCallback((): boolean => {
+    // Pflege roles cannot edit
+    if (isReadOnly()) return false;
     return hasAnyRole(['ADMIN', 'MANAGER']);
-  }, [hasAnyRole]);
+  }, [hasAnyRole, isReadOnly]);
 
   const canDeletePatients = useCallback((): boolean => {
+    // Pflege roles cannot delete
+    if (isReadOnly()) return false;
     return hasAnyRole(['ADMIN', 'MANAGER']);
-  }, [hasAnyRole]);
+  }, [hasAnyRole, isReadOnly]);
 
   const canAssignStation = useCallback((): boolean => {
+    // Pflege roles cannot assign
+    if (isReadOnly()) return false;
     return hasAnyRole(['ADMIN', 'MANAGER', 'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d']);
-  }, [hasAnyRole]);
+  }, [hasAnyRole, isReadOnly]);
 
   const canViewStation = useCallback((station: Station): boolean => {
     if (hasAnyRole(['ADMIN', 'MANAGER'])) return true;
     const stationRole = STATION_ROLES[station];
-    return hasRole(stationRole);
+    const pflegeRole = PFLEGE_ROLES[station];
+    return hasRole(stationRole) || hasRole(pflegeRole);
   }, [hasRole, hasAnyRole]);
 
   const canAccessAdminCenter = useCallback((): boolean => {
@@ -146,10 +218,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return ['A', 'B', 'C', 'D'];
     }
     const stations: Station[] = [];
-    if (hasRole('arzt_a')) stations.push('A');
-    if (hasRole('arzt_b')) stations.push('B');
-    if (hasRole('arzt_c')) stations.push('C');
-    if (hasRole('arzt_d')) stations.push('D');
+    if (hasRole('arzt_a') || hasRole('pflege_a')) stations.push('A');
+    if (hasRole('arzt_b') || hasRole('pflege_b')) stations.push('B');
+    if (hasRole('arzt_c') || hasRole('pflege_c')) stations.push('C');
+    if (hasRole('arzt_d') || hasRole('pflege_d')) stations.push('D');
     return stations;
   }, [hasRole, hasAnyRole]);
 
@@ -160,6 +232,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user,
         login,
         logout,
+        changePassword,
         hasRole,
         hasAnyRole,
         canViewVollstation,
@@ -169,6 +242,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         canViewStation,
         canAccessAdminCenter,
         getVisibleStations,
+        isReadOnly,
       }}
     >
       {children}

@@ -50,7 +50,7 @@ const PatientFormPage: React.FC = () => {
   const [relevantConditionsDetails, setRelevantConditionsDetails] = useState('');
   const [notes, setNotes] = useState('');
   const [admissionType, setAdmissionType] = useState<AdmissionType>('TEILSTATION');
-  const [urgency, setUrgency] = useState<Urgency | ''>('');
+  const [urgency, setUrgency] = useState<Urgency | ''>('elektiv');
   const [station, setStation] = useState<Station | ''>('');
   const [vollStation, setVollStation] = useState<VollStation | ''>('');
   const [secondaryStation, setSecondaryStation] = useState<VollStation | ''>('');
@@ -143,8 +143,8 @@ const PatientFormPage: React.FC = () => {
       newErrors.relevantConditionsDetails = 'Bitte Details zu relevanten Erkrankungen angeben';
     }
 
-    // Dringlichkeit ist nur bei Vollstation Pflicht
-    if (admissionType === 'VOLLSTATION' && !urgency) {
+    // Dringlichkeit ist immer Pflicht
+    if (!urgency) {
       newErrors.urgency = 'Dringlichkeit ist erforderlich';
     }
 
@@ -185,7 +185,7 @@ const PatientFormPage: React.FC = () => {
         relevantConditionsDetails: relevantConditions ? relevantConditionsDetails.trim() : undefined,
         notes: notes.trim() || undefined,
         admissionType,
-        urgency: admissionType === 'VOLLSTATION' ? (urgency as Urgency) : undefined,
+        urgency: urgency as Urgency,
         station: admissionType === 'TEILSTATION' && !isIntake && station ? (station as Station) : undefined,
         vollStation: admissionType === 'VOLLSTATION' && !isIntake && vollStation ? (vollStation as VollStation) : undefined,
         secondaryStation: admissionType === 'VOLLSTATION' && !isIntake && secondaryStation ? (secondaryStation as VollStation) : undefined,
@@ -460,10 +460,10 @@ const PatientFormPage: React.FC = () => {
           <h2 className="form-section-title">Aufnahme</h2>
           
           <div className="space-y-4">
-            {/* Vorgesprächstermin - nur für Vollstation (bei Teilstation wird er später in "Vorgespräche" vergeben) */}
+            {/* Patientenkontakt am - nur für Vollstation (bei Teilstation wird er später in "Vorgespräche" vergeben) */}
             {!isIntake && admissionType === 'VOLLSTATION' && (
               <div>
-                <Label>Vorgesprächstermin *</Label>
+                <Label>Patientenkontakt am *</Label>
                 <div className="w-full p-3 mt-2 rounded-md border border-input bg-muted text-muted-foreground">
                   <CalendarIcon className="mr-2 h-4 w-4 inline" />
                   {format(new Date(), "PPP", { locale: de })}
@@ -520,27 +520,25 @@ const PatientFormPage: React.FC = () => {
               </div>
             )}
 
-            {/* Dringlichkeit - nur bei Vollstation anzeigen */}
-            {admissionType === 'VOLLSTATION' && (
-              <div>
-                <Label>Dringlichkeit *</Label>
-                <RadioGroup
-                  value={urgency}
-                  onValueChange={(value) => setUrgency(value as Urgency)}
-                  className="flex gap-6 mt-2"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="elektiv" id="urgency-elektiv" />
-                    <Label htmlFor="urgency-elektiv" className="font-normal">Elektiv</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="dringend" id="urgency-dringend" />
-                    <Label htmlFor="urgency-dringend" className="font-normal">Dringend</Label>
-                  </div>
-                </RadioGroup>
-                <InputError error={errors.urgency} />
-              </div>
-            )}
+            {/* Dringlichkeit - für beide Aufnahmearten */}
+            <div>
+              <Label>Dringlichkeit *</Label>
+              <RadioGroup
+                value={urgency}
+                onValueChange={(value) => setUrgency(value as Urgency)}
+                className="flex gap-6 mt-2"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="elektiv" id="urgency-elektiv" />
+                  <Label htmlFor="urgency-elektiv" className="font-normal">Elektiv</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="dringend" id="urgency-dringend" />
+                  <Label htmlFor="urgency-dringend" className="font-normal">Dringend</Label>
+                </div>
+              </RadioGroup>
+              <InputError error={errors.urgency} />
+            </div>
 
             {admissionType === 'VOLLSTATION' && !isIntake && (
               <>
