@@ -15,7 +15,8 @@ import PatientFormPage from "./pages/PatientFormPage";
 import VollstationPage from "./pages/VollstationPage";
 import TeilstationOverviewPage from "./pages/TeilstationOverviewPage";
 import TeilstationOpenPage from "./pages/TeilstationOpenPage";
-import StationPage from "./pages/StationPage";
+import StationPreInterviewPage from "./pages/StationPreInterviewPage";
+import StationWaitingListPage from "./pages/StationWaitingListPage";
 import AdminCenterPage from "./pages/AdminCenterPage";
 import ArchivePage from "./pages/ArchivePage";
 import NotFound from "./pages/NotFound";
@@ -42,7 +43,8 @@ const App = () => (
                 <Route path="/vollstation" element={<VollstationPage />} />
                 <Route path="/teilstation/overview" element={<TeilstationOverviewPage />} />
                 <Route path="/teilstation/open" element={<TeilstationOpenPage />} />
-                <Route path="/station/:station" element={<StationPage />} />
+                <Route path="/station/:station/vorgespraech" element={<StationPreInterviewPage />} />
+                <Route path="/station/:station/warteliste" element={<StationWaitingListPage />} />
                 <Route path="/admin" element={<AdminCenterPage />} />
                 <Route path="/admin/archive" element={<ArchivePage />} />
               </Route>
