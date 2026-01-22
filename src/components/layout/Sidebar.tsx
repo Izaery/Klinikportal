@@ -113,37 +113,69 @@ export const Sidebar: React.FC = () => {
                 <NavItem 
                   to="/teilstation/open" 
                   icon={<span className="w-5 h-5 flex items-center justify-center text-xs">📋</span>} 
-                  label="Vorgespräche" 
+                  label="Anfrageliste" 
                 />
                 {canSeeStationTabs && (
                   <>
                     {visibleStations.includes('A') && (
-                      <NavItem 
-                        to="/station/A" 
-                        icon={<span className="w-5 h-5 flex items-center justify-center rounded bg-station-a text-[10px] font-bold text-primary-foreground">A</span>} 
-                        label="Station A" 
-                      />
+                      <Collapsible>
+                        <CollapsibleTrigger className="sidebar-item w-full justify-between text-sm py-1.5">
+                          <div className="flex items-center gap-3">
+                            <span className="w-5 h-5 flex items-center justify-center rounded bg-station-a text-[10px] font-bold text-primary-foreground">A</span>
+                            <span>Station A</span>
+                          </div>
+                          <ChevronDown className="h-3 w-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="pl-6 space-y-1 mt-1">
+                          <NavItem to="/station/A/vorgespraech" icon={<span className="w-4 h-4 flex items-center justify-center text-[10px]">📝</span>} label="Vorgesprächsliste" />
+                          <NavItem to="/station/A/warteliste" icon={<span className="w-4 h-4 flex items-center justify-center text-[10px]">⏳</span>} label="Warteliste" />
+                        </CollapsibleContent>
+                      </Collapsible>
                     )}
                     {visibleStations.includes('B') && (
-                      <NavItem 
-                        to="/station/B" 
-                        icon={<span className="w-5 h-5 flex items-center justify-center rounded bg-station-b text-[10px] font-bold text-primary-foreground">B</span>} 
-                        label="Station B" 
-                      />
+                      <Collapsible>
+                        <CollapsibleTrigger className="sidebar-item w-full justify-between text-sm py-1.5">
+                          <div className="flex items-center gap-3">
+                            <span className="w-5 h-5 flex items-center justify-center rounded bg-station-b text-[10px] font-bold text-primary-foreground">B</span>
+                            <span>Station B</span>
+                          </div>
+                          <ChevronDown className="h-3 w-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="pl-6 space-y-1 mt-1">
+                          <NavItem to="/station/B/vorgespraech" icon={<span className="w-4 h-4 flex items-center justify-center text-[10px]">📝</span>} label="Vorgesprächsliste" />
+                          <NavItem to="/station/B/warteliste" icon={<span className="w-4 h-4 flex items-center justify-center text-[10px]">⏳</span>} label="Warteliste" />
+                        </CollapsibleContent>
+                      </Collapsible>
                     )}
                     {visibleStations.includes('C') && (
-                      <NavItem 
-                        to="/station/C" 
-                        icon={<span className="w-5 h-5 flex items-center justify-center rounded bg-station-c text-[10px] font-bold text-primary-foreground">C</span>} 
-                        label="Station C" 
-                      />
+                      <Collapsible>
+                        <CollapsibleTrigger className="sidebar-item w-full justify-between text-sm py-1.5">
+                          <div className="flex items-center gap-3">
+                            <span className="w-5 h-5 flex items-center justify-center rounded bg-station-c text-[10px] font-bold text-primary-foreground">C</span>
+                            <span>Station C</span>
+                          </div>
+                          <ChevronDown className="h-3 w-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="pl-6 space-y-1 mt-1">
+                          <NavItem to="/station/C/vorgespraech" icon={<span className="w-4 h-4 flex items-center justify-center text-[10px]">📝</span>} label="Vorgesprächsliste" />
+                          <NavItem to="/station/C/warteliste" icon={<span className="w-4 h-4 flex items-center justify-center text-[10px]">⏳</span>} label="Warteliste" />
+                        </CollapsibleContent>
+                      </Collapsible>
                     )}
                     {visibleStations.includes('D') && (
-                      <NavItem 
-                        to="/station/D" 
-                        icon={<span className="w-5 h-5 flex items-center justify-center rounded bg-station-d text-[10px] font-bold text-primary-foreground">D</span>} 
-                        label="Station D" 
-                      />
+                      <Collapsible>
+                        <CollapsibleTrigger className="sidebar-item w-full justify-between text-sm py-1.5">
+                          <div className="flex items-center gap-3">
+                            <span className="w-5 h-5 flex items-center justify-center rounded bg-station-d text-[10px] font-bold text-primary-foreground">D</span>
+                            <span>Station D</span>
+                          </div>
+                          <ChevronDown className="h-3 w-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="pl-6 space-y-1 mt-1">
+                          <NavItem to="/station/D/vorgespraech" icon={<span className="w-4 h-4 flex items-center justify-center text-[10px]">📝</span>} label="Vorgesprächsliste" />
+                          <NavItem to="/station/D/warteliste" icon={<span className="w-4 h-4 flex items-center justify-center text-[10px]">⏳</span>} label="Warteliste" />
+                        </CollapsibleContent>
+                      </Collapsible>
                     )}
                   </>
                 )}

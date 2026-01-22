@@ -102,7 +102,7 @@ const TeilstationOpenPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Teilstation - Vorgespräche</h1>
+        <h1 className="text-2xl font-bold text-foreground">Teilstation - Anfrageliste</h1>
         <p className="text-muted-foreground mt-1">
           Patienten ohne Station ({patients.length})
         </p>

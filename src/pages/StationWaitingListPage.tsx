@@ -17,10 +17,10 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-const StationPage: React.FC = () => {
+const StationWaitingListPage: React.FC = () => {
   const { station } = useParams<{ station: string }>();
   const { canViewStation, canEditPatients, canDeletePatients } = useAuth();
-  const { getStationPatients, archivePatient } = usePatients();
+  const { getStationWaitingListPatients, archivePatient } = usePatients();
   const navigate = useNavigate();
   const [patientToDelete, setPatientToDelete] = React.useState<Patient | null>(null);
 
@@ -36,7 +36,7 @@ const StationPage: React.FC = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  const patients = getStationPatients(stationKey);
+  const patients = getStationWaitingListPatients(stationKey);
 
   const columns = [
     { key: 'lastName' as const, label: 'Nachname', sortable: true },
@@ -46,7 +46,7 @@ const StationPage: React.FC = () => {
     { key: 'diagnosis' as const, label: 'Diagnose', sortable: true },
     { key: 'urgency' as const, label: 'Dringlichkeit', sortable: true },
     { key: 'lastModifiedAt' as const, label: 'Geändert von', sortable: true },
-    { key: 'actions' as const, label: 'Aktionen', width: '100px' },
+    ...((canEditPatients() || canDeletePatients()) ? [{ key: 'actions' as const, label: 'Aktionen', width: '100px' }] : []),
   ];
 
   const handleEdit = (patient: Patient) => {
@@ -70,7 +70,7 @@ const StationPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center gap-3">
-        <h1 className="text-2xl font-bold text-foreground">{STATION_LABELS[stationKey]}</h1>
+        <h1 className="text-2xl font-bold text-foreground">{STATION_LABELS[stationKey]} - Warteliste</h1>
         <Badge variant={badgeVariant} className="text-sm">
           {patients.length} Patienten
         </Badge>
@@ -81,7 +81,7 @@ const StationPage: React.FC = () => {
         columns={columns}
         onEdit={canEditPatients() ? handleEdit : undefined}
         onDelete={canDeletePatients() ? handleDelete : undefined}
-        emptyMessage={`Keine Patienten auf ${STATION_LABELS[stationKey]}`}
+        emptyMessage={`Keine Patienten auf der Warteliste von ${STATION_LABELS[stationKey]}`}
       />
 
       <AlertDialog open={!!patientToDelete} onOpenChange={() => setPatientToDelete(null)}>
@@ -105,4 +105,4 @@ const StationPage: React.FC = () => {
   );
 };
 
-export default StationPage;
+export default StationWaitingListPage;

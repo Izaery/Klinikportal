@@ -7,7 +7,8 @@ import {
   Edit,
   Trash2,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  UserPlus
 } from 'lucide-react';
 import { Patient, Station, VollStation, URGENCY_LABELS, STATION_LABELS, VOLL_STATION_LABELS, GENDER_LABELS } from '@/types';
 import { Input } from '@/components/ui/input';
@@ -32,6 +33,7 @@ interface PatientTableProps {
   onEdit?: (patient: Patient) => void;
   onDelete?: (patient: Patient) => void;
   onAssignStation?: (patient: Patient, station: Station) => void;
+  onAdmit?: (patient: Patient) => void;
   showStationAssign?: boolean;
   emptyMessage?: string;
 }
@@ -42,6 +44,7 @@ export const PatientTable: React.FC<PatientTableProps> = ({
   onEdit,
   onDelete,
   onAssignStation,
+  onAdmit,
   showStationAssign = false,
   emptyMessage = 'Keine Patienten gefunden',
 }) => {
@@ -367,6 +370,19 @@ export const PatientTable: React.FC<PatientTableProps> = ({
                                 D
                               </Button>
                             </div>
+                          )}
+                          {col.key === 'admissionAction' && onAdmit && (
+                            <Button 
+                              size="sm" 
+                              variant="success"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onAdmit(patient);
+                              }}
+                            >
+                              <UserPlus className="h-4 w-4 mr-1" />
+                              Aufnahme
+                            </Button>
                           )}
                           {col.key === 'actions' && (
                             <div className="flex gap-2">
