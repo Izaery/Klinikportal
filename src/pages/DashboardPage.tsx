@@ -147,7 +147,7 @@ const DashboardPage: React.FC = () => {
             <div 
               key={station} 
               className="p-4 rounded-lg border border-border bg-muted/30 text-center cursor-pointer hover:bg-muted/50 transition-colors"
-              onClick={() => navigate(`/station/${station}`)}
+              onClick={() => navigate(`/teilstation/${station.toLowerCase()}/waiting`)}
             >
               <Badge 
                 variant={`station${station}` as 'stationA' | 'stationB' | 'stationC' | 'stationD'}
