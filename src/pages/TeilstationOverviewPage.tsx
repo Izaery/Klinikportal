@@ -41,7 +41,7 @@ const TeilstationOverviewPage: React.FC = () => {
             <span className="text-sm text-muted-foreground">({patients.length})</span>
           </div>
           <Button variant={buttonVariant} size="sm" asChild>
-            <Link to={`/teilstation/${station.toLowerCase()}/waiting`}>
+            <Link to={`/station/${station}/warteliste`}>
               Warteliste <ArrowRight className="ml-1 h-4 w-4" />
             </Link>
           </Button>
