@@ -102,7 +102,7 @@ const DashboardPage: React.FC = () => {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Vorgespräche</p>
+              <p className="text-sm font-medium text-muted-foreground">Anfrageliste Teilstation</p>
               <p className="text-3xl font-bold text-foreground mt-1">{openCount}</p>
             </div>
             <div className="h-12 w-12 rounded-lg bg-warning/10 flex items-center justify-center">

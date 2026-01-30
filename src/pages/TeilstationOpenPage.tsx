@@ -31,7 +31,9 @@ const TeilstationOpenPage: React.FC = () => {
   const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
   const [stationAssignment, setStationAssignment] = useState<{ patient: Patient; station: Station } | null>(null);
   const [preInterviewDate, setPreInterviewDate] = useState<Date | undefined>(undefined);
+  const [preInterviewTime, setPreInterviewTime] = useState<string>('');
   const [preInterviewDateError, setPreInterviewDateError] = useState<string>('');
+  const [preInterviewTimeError, setPreInterviewTimeError] = useState<string>('');
 
   const patients = getOpenTeilstationPatients();
 
@@ -57,34 +59,52 @@ const TeilstationOpenPage: React.FC = () => {
   const handleAssignStation = (patient: Patient, station: Station) => {
     setStationAssignment({ patient, station });
     setPreInterviewDate(undefined);
+    setPreInterviewTime('');
     setPreInterviewDateError('');
+    setPreInterviewTimeError('');
   };
 
   const confirmAssignStation = () => {
+    let hasError = false;
+
     if (!preInterviewDate) {
       setPreInterviewDateError('Vorgesprächstermin ist erforderlich');
-      return;
+      hasError = true;
+    } else {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const selectedDate = new Date(preInterviewDate);
+      selectedDate.setHours(0, 0, 0, 0);
+
+      if (selectedDate < today) {
+        setPreInterviewDateError('Vorgesprächstermin darf nicht in der Vergangenheit liegen');
+        hasError = true;
+      }
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const selectedDate = new Date(preInterviewDate);
-    selectedDate.setHours(0, 0, 0, 0);
-
-    if (selectedDate < today) {
-      setPreInterviewDateError('Vorgesprächstermin darf nicht in der Vergangenheit liegen');
-      return;
+    if (!preInterviewTime) {
+      setPreInterviewTimeError('Uhrzeit ist erforderlich');
+      hasError = true;
     }
 
-    if (stationAssignment) {
+    if (hasError) return;
+
+    if (stationAssignment && preInterviewDate) {
+      // Combine date and time
+      const [hours, minutes] = preInterviewTime.split(':').map(Number);
+      const combinedDateTime = new Date(preInterviewDate);
+      combinedDateTime.setHours(hours, minutes, 0, 0);
+
       updatePatient(stationAssignment.patient.id, { 
         station: stationAssignment.station,
-        preInterviewDate: preInterviewDate.toISOString()
+        preInterviewDate: combinedDateTime.toISOString()
       });
       toast.success(`${stationAssignment.patient.lastName}, ${stationAssignment.patient.firstName} wurde Station ${stationAssignment.station} zugewiesen`);
       setStationAssignment(null);
       setPreInterviewDate(undefined);
+      setPreInterviewTime('');
       setPreInterviewDateError('');
+      setPreInterviewTimeError('');
     }
   };
 
@@ -139,7 +159,9 @@ const TeilstationOpenPage: React.FC = () => {
       <AlertDialog open={!!stationAssignment} onOpenChange={() => {
         setStationAssignment(null);
         setPreInterviewDate(undefined);
+        setPreInterviewTime('');
         setPreInterviewDateError('');
+        setPreInterviewTimeError('');
       }}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -182,8 +204,27 @@ const TeilstationOpenPage: React.FC = () => {
                   {preInterviewDateError && (
                     <p className="text-sm text-destructive">{preInterviewDateError}</p>
                   )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Uhrzeit *</Label>
+                  <input
+                    type="time"
+                    value={preInterviewTime}
+                    onChange={(e) => {
+                      setPreInterviewTime(e.target.value);
+                      setPreInterviewTimeError('');
+                    }}
+                    className={cn(
+                      "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                      preInterviewTimeError && "border-destructive"
+                    )}
+                  />
+                  {preInterviewTimeError && (
+                    <p className="text-sm text-destructive">{preInterviewTimeError}</p>
+                  )}
                   <p className="text-xs text-muted-foreground">
-                    Muss am heutigen Tag oder in der Zukunft liegen
+                    Datum und Uhrzeit müssen angegeben werden
                   </p>
                 </div>
               </div>
@@ -193,12 +234,20 @@ const TeilstationOpenPage: React.FC = () => {
             <AlertDialogCancel>Abbrechen</AlertDialogCancel>
             <AlertDialogAction 
               onClick={(e) => {
+                let hasError = false;
                 if (!preInterviewDate) {
                   e.preventDefault();
                   setPreInterviewDateError('Vorgesprächstermin ist erforderlich');
-                  return;
+                  hasError = true;
                 }
-                confirmAssignStation();
+                if (!preInterviewTime) {
+                  e.preventDefault();
+                  setPreInterviewTimeError('Uhrzeit ist erforderlich');
+                  hasError = true;
+                }
+                if (!hasError) {
+                  confirmAssignStation();
+                }
               }}
             >
               Zuweisen

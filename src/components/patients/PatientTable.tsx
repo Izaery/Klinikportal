@@ -285,6 +285,15 @@ export const PatientTable: React.FC<PatientTableProps> = ({
                               <span className="text-muted-foreground">-</span>
                             )
                           )}
+                          {col.key === 'secondaryStation' && (
+                            patient.secondaryStation ? (
+                              <Badge variant="secondary">
+                                {VOLL_STATION_LABELS[patient.secondaryStation]}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )
+                          )}
                           {col.key === 'urgency' && (
                             patient.urgency ? (
                               <Badge variant={patient.urgency === 'dringend' ? 'urgent' : 'elective'}>
