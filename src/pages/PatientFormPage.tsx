@@ -625,37 +625,12 @@ const PatientFormPage: React.FC = () => {
             )}
 
             {admissionType === 'TEILSTATION' && (
-              <>
-                {!isIntake && (
-                  <div>
-                    <Label htmlFor="station">Station</Label>
-                    <Select value={station || "none"} onValueChange={(value) => setStation(value === "none" ? '' : value as Station)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Station auswählen (optional)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Keine Zuweisung</SelectItem>
-                        <SelectItem value="A">Station A</SelectItem>
-                        <SelectItem value="B">Station B</SelectItem>
-                        <SelectItem value="C">Station C</SelectItem>
-                        <SelectItem value="D">Station D</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Optional - kann später zugewiesen werden
-                    </p>
-                  </div>
-                )}
-
-                {isIntake && (
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      Als Aufnahme-Mitarbeiter können Sie keine Station zuweisen. Dies erfolgt später durch Ärzte oder Manager.
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </>
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Bei Teilstation erfolgt die Stationszuweisung später über die Anfrageliste durch Ärzte oder Manager.
+                </AlertDescription>
+              </Alert>
             )}
           </div>
         </div>

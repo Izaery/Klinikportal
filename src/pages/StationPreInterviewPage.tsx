@@ -28,7 +28,7 @@ import {
 
 const StationPreInterviewPage: React.FC = () => {
   const { station } = useParams<{ station: string }>();
-  const { canViewStation, canEditPatients, canDeletePatients } = useAuth();
+  const { canViewStation, canEditPatients, canDeletePatients, hasAnyRole } = useAuth();
   const { getStationPreInterviewPatients, archivePatient, moveToWaitingList } = usePatients();
   const navigate = useNavigate();
   const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
@@ -49,6 +49,9 @@ const StationPreInterviewPage: React.FC = () => {
 
   const patients = getStationPreInterviewPatients(stationKey);
 
+  // Ärzte und Manager können Aufnahme durchführen
+  const canAdmit = hasAnyRole(['ADMIN', 'MANAGER', 'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d']);
+
   const columns = [
     { key: 'lastName' as const, label: 'Nachname', sortable: true },
     { key: 'firstName' as const, label: 'Vorname', sortable: true },
@@ -57,7 +60,7 @@ const StationPreInterviewPage: React.FC = () => {
     { key: 'diagnosis' as const, label: 'Diagnose', sortable: true },
     { key: 'urgency' as const, label: 'Dringlichkeit', sortable: true },
     { key: 'lastModifiedAt' as const, label: 'Geändert von', sortable: true },
-    ...(canEditPatients() ? [{ key: 'admissionAction' as const, label: 'Aufnahme', width: '120px' }] : []),
+    ...(canAdmit ? [{ key: 'admissionAction' as const, label: 'Aufnahme', width: '120px' }] : []),
     ...((canEditPatients() || canDeletePatients()) ? [{ key: 'actions' as const, label: 'Aktionen', width: '100px' }] : []),
   ];
 
@@ -107,7 +110,7 @@ const StationPreInterviewPage: React.FC = () => {
         columns={columns}
         onEdit={canEditPatients() ? handleEdit : undefined}
         onDelete={canDeletePatients() ? handleDelete : undefined}
-        onAdmit={canEditPatients() ? handleAdmit : undefined}
+        onAdmit={canAdmit ? handleAdmit : undefined}
         emptyMessage={`Keine Patienten in der Vorgesprächsliste von ${STATION_LABELS[stationKey]}`}
       />
 
