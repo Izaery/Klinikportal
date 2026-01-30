@@ -13,7 +13,7 @@ import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import PatientFormPage from "./pages/PatientFormPage";
 import VollstationPage from "./pages/VollstationPage";
-import TeilstationOverviewPage from "./pages/TeilstationOverviewPage";
+
 import TeilstationOpenPage from "./pages/TeilstationOpenPage";
 import StationPreInterviewPage from "./pages/StationPreInterviewPage";
 import StationWaitingListPage from "./pages/StationWaitingListPage";
@@ -41,7 +41,7 @@ const App = () => (
                 <Route path="/patient/new" element={<PatientFormPage />} />
                 <Route path="/patient/edit/:id" element={<PatientFormPage />} />
                 <Route path="/vollstation" element={<VollstationPage />} />
-                <Route path="/teilstation/overview" element={<TeilstationOverviewPage />} />
+                
                 <Route path="/teilstation/open" element={<TeilstationOpenPage />} />
                 <Route path="/station/:station/vorgespraech" element={<StationPreInterviewPage />} />
                 <Route path="/station/:station/warteliste" element={<StationWaitingListPage />} />

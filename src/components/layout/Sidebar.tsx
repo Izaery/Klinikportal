@@ -106,11 +106,6 @@ export const Sidebar: React.FC = () => {
               </CollapsibleTrigger>
               <CollapsibleContent className="pl-4 space-y-1 mt-1">
                 <NavItem 
-                  to="/teilstation/overview" 
-                  icon={<span className="w-5 h-5 flex items-center justify-center text-xs">📊</span>} 
-                  label="Übersicht" 
-                />
-                <NavItem 
                   to="/teilstation/open" 
                   icon={<span className="w-5 h-5 flex items-center justify-center text-xs">📋</span>} 
                   label="Anfrageliste" 
