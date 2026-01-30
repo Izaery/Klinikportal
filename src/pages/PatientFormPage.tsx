@@ -592,36 +592,40 @@ const PatientFormPage: React.FC = () => {
                   </p>
                 </div>
 
-                <div>
-                  <Label>Aufnahmedatum</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !admissionDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {admissionDate ? format(admissionDate, 'dd.MM.yyyy', { locale: de }) : 'Datum auswählen (optional)'}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={admissionDate}
-                        onSelect={setAdmissionDate}
-                        locale={de}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Optional - geplantes Aufnahmedatum
-                  </p>
-                </div>
               </>
+            )}
+
+            {/* Aufnahmedatum - im Bearbeitungsmodus für alle Aufnahmearten sichtbar */}
+            {isEditMode && (
+              <div>
+                <Label>Aufnahmedatum</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !admissionDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {admissionDate ? format(admissionDate, 'dd.MM.yyyy', { locale: de }) : 'Datum auswählen (optional)'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={admissionDate}
+                      onSelect={setAdmissionDate}
+                      locale={de}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Optional - geplantes Aufnahmedatum
+                </p>
+              </div>
             )}
 
             {admissionType === 'TEILSTATION' && (
