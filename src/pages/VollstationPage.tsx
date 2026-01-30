@@ -37,6 +37,7 @@ const VollstationPage: React.FC = () => {
     { key: 'urgency' as const, label: 'Dringlichkeit', sortable: true },
     { key: 'admissionDate' as const, label: 'Aufnahmedatum', sortable: true },
     { key: 'vollStation' as const, label: 'Station', sortable: true },
+    { key: 'secondaryStation' as const, label: 'Zweite Station', sortable: true },
     { key: 'diagnosis' as const, label: 'Diagnose', sortable: true },
     { key: 'lastModifiedAt' as const, label: 'Geändert von', sortable: true },
     { key: 'actions' as const, label: 'Aktionen', width: '100px' },
