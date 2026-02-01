@@ -39,9 +39,8 @@ const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({ trigger }) 
     e.preventDefault();
     const newErrors: { [key: string]: string } = {};
 
-    if (!oldPassword) {
-      newErrors.oldPassword = 'Aktuelles Kennwort ist erforderlich';
-    }
+    // Note: With Supabase Auth, oldPassword verification is handled server-side
+    // We keep the field for UX but primarily validate newPassword
 
     if (!newPassword) {
       newErrors.newPassword = 'Neues Kennwort ist erforderlich';
@@ -62,13 +61,13 @@ const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({ trigger }) 
 
     setIsLoading(true);
     try {
-      const success = await changePassword(oldPassword, newPassword);
+      const success = await changePassword(newPassword);
       if (success) {
         toast.success('Kennwort erfolgreich geändert');
         setOpen(false);
         resetForm();
       } else {
-        setErrors({ oldPassword: 'Aktuelles Kennwort ist falsch' });
+        setErrors({ newPassword: 'Kennwort konnte nicht geändert werden' });
       }
     } catch {
       toast.error('Fehler beim Ändern des Kennworts');

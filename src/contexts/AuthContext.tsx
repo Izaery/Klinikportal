@@ -1,12 +1,15 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { User, UserRole, Station, STATION_ROLES } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
+import type { Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
-  logout: () => void;
-  changePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
+  changePassword: (newPassword: string) => Promise<boolean>;
   hasRole: (role: UserRole) => boolean;
   hasAnyRole: (roles: UserRole[]) => boolean;
   canViewVollstation: () => boolean;
@@ -29,140 +32,141 @@ export const PFLEGE_ROLES: Record<Station, UserRole> = {
   'D': 'pflege_d',
 };
 
-// Mock users for demonstration
-const MOCK_USERS: Array<User & { password: string }> = [
-  {
-    id: '1',
-    username: 'admin',
-    password: 'admin123',
-    displayName: 'Dr. Admin',
-    roles: ['ADMIN'],
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    username: 'manager',
-    password: 'manager123',
-    displayName: 'Fr. Manager',
-    roles: ['MANAGER'],
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '3',
-    username: 'aufnahme',
-    password: 'aufnahme123',
-    displayName: 'Hr. Aufnahme',
-    roles: ['INTAKE'],
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '4',
-    username: 'voll_view',
-    password: 'voll123',
-    displayName: 'Fr. Vollansicht',
-    roles: ['VOLL_VIEW'],
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '5',
-    username: 'arzt_a',
-    password: 'arzt123',
-    displayName: 'Dr. Schmidt (A)',
-    roles: ['arzt_a'],
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '6',
-    username: 'arzt_b',
-    password: 'arzt123',
-    displayName: 'Dr. Müller (B)',
-    roles: ['arzt_b'],
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '7',
-    username: 'arzt_c',
-    password: 'arzt123',
-    displayName: 'Dr. Meier (C)',
-    roles: ['arzt_c'],
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '8',
-    username: 'arzt_d',
-    password: 'arzt123',
-    displayName: 'Dr. Wagner (D)',
-    roles: ['arzt_d'],
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '9',
-    username: 'pflege_a',
-    password: 'pflege123',
-    displayName: 'Sr. Krause (A)',
-    roles: ['pflege_a'],
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '10',
-    username: 'pflege_b',
-    password: 'pflege123',
-    displayName: 'Sr. Fischer (B)',
-    roles: ['pflege_b'],
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '11',
-    username: 'pflege_c',
-    password: 'pflege123',
-    displayName: 'Sr. Weber (C)',
-    roles: ['pflege_c'],
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '12',
-    username: 'pflege_d',
-    password: 'pflege123',
-    displayName: 'Sr. Becker (D)',
-    roles: ['pflege_d'],
-    createdAt: new Date().toISOString(),
-  },
-];
+// Map database role strings to UserRole type
+const mapDbRoleToUserRole = (dbRole: string): UserRole | null => {
+  const validRoles: UserRole[] = [
+    'ADMIN', 'MANAGER', 'INTAKE', 'VOLL_VIEW',
+    'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d',
+    'pflege_a', 'pflege_b', 'pflege_c', 'pflege_d'
+  ];
+  return validRoles.includes(dbRole as UserRole) ? (dbRole as UserRole) : null;
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(null);
 
-  const login = useCallback(async (username: string, password: string): Promise<boolean> => {
-    const foundUser = MOCK_USERS.find(
-      u => u.username === username && u.password === password
-    );
-    
-    if (foundUser) {
-      const { password: _, ...userWithoutPassword } = foundUser;
-      setUser(userWithoutPassword);
-      return true;
+  // Fetch user profile and roles
+  const fetchUserData = useCallback(async (userId: string): Promise<User | null> => {
+    try {
+      // Fetch profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        return null;
+      }
+
+      if (!profile) {
+        console.error('No profile found for user');
+        return null;
+      }
+
+      // Fetch roles
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+
+      if (rolesError) {
+        console.error('Error fetching roles:', rolesError);
+        return null;
+      }
+
+      const roles: UserRole[] = (rolesData || [])
+        .map(r => mapDbRoleToUserRole(r.role))
+        .filter((r): r is UserRole => r !== null);
+
+      return {
+        id: userId,
+        username: profile.username,
+        displayName: profile.display_name,
+        roles,
+        createdAt: profile.created_at,
+      };
+    } catch (error) {
+      console.error('Error in fetchUserData:', error);
+      return null;
     }
-    return false;
   }, []);
 
-  const logout = useCallback(() => {
+  // Initialize auth state
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+        fetchUserData(session.user.id).then(userData => {
+          setUser(userData);
+          setIsLoading(false);
+        });
+      } else {
+        setIsLoading(false);
+      }
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setSession(session);
+      if (session?.user) {
+        const userData = await fetchUserData(session.user.id);
+        setUser(userData);
+      } else {
+        setUser(null);
+      }
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [fetchUserData]);
+
+  const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error('Login error:', error);
+        return { success: false, error: error.message };
+      }
+
+      if (data.user) {
+        const userData = await fetchUserData(data.user.id);
+        if (userData) {
+          setUser(userData);
+          return { success: true };
+        }
+        return { success: false, error: 'Benutzerprofil nicht gefunden' };
+      }
+
+      return { success: false, error: 'Anmeldung fehlgeschlagen' };
+    } catch (error) {
+      console.error('Login exception:', error);
+      return { success: false, error: 'Ein unerwarteter Fehler ist aufgetreten' };
+    }
+  }, [fetchUserData]);
+
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
     setUser(null);
+    setSession(null);
   }, []);
 
-  const changePassword = useCallback(async (oldPassword: string, newPassword: string): Promise<boolean> => {
-    if (!user) return false;
-    
-    // Find the user in mock data
-    const mockUser = MOCK_USERS.find(u => u.id === user.id);
-    if (!mockUser) return false;
-    
-    // Verify old password
-    if (mockUser.password !== oldPassword) return false;
-    
-    // Update password in mock data (in a real app this would be an API call)
-    mockUser.password = newPassword;
-    return true;
-  }, [user]);
+  const changePassword = useCallback(async (newPassword: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      return !error;
+    } catch {
+      return false;
+    }
+  }, []);
 
   const hasRole = useCallback((role: UserRole): boolean => {
     return user?.roles.includes(role) ?? false;
@@ -229,7 +233,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: !!user,
+        isAuthenticated: !!user && !!session,
+        isLoading,
         login,
         logout,
         changePassword,

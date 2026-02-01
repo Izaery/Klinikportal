@@ -1,15 +1,18 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import { Patient, Station, VollStation, AdmissionType } from '@/types';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { Patient, Station, VollStation } from '@/types';
 import { useAuth } from './AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface PatientContextType {
   patients: Patient[];
-  addPatient: (patient: Omit<Patient, 'id' | 'createdAt' | 'createdBy' | 'createdByDisplayName' | 'lastModifiedAt' | 'lastModifiedBy' | 'lastModifiedByDisplayName' | 'archived'>) => void;
-  updatePatient: (id: string, updates: Partial<Patient>) => void;
-  archivePatient: (id: string) => void;
-  restorePatient: (id: string) => void;
-  assignStation: (id: string, station: Station) => void;
-  moveToWaitingList: (id: string, admissionDate?: string) => void;
+  isLoading: boolean;
+  addPatient: (patient: Omit<Patient, 'id' | 'createdAt' | 'createdBy' | 'createdByDisplayName' | 'lastModifiedAt' | 'lastModifiedBy' | 'lastModifiedByDisplayName' | 'archived'>) => Promise<Patient | null>;
+  updatePatient: (id: string, updates: Partial<Patient>) => Promise<boolean>;
+  archivePatient: (id: string) => Promise<boolean>;
+  restorePatient: (id: string) => Promise<boolean>;
+  assignStation: (id: string, station: Station) => Promise<boolean>;
+  moveToWaitingList: (id: string, admissionDate?: string) => Promise<boolean>;
   getVollstationPatients: () => Patient[];
   getTeilstationPatients: () => Patient[];
   getOpenTeilstationPatients: () => Patient[];
@@ -19,124 +22,273 @@ interface PatientContextType {
   getVollStationPatients: (vollStation: VollStation) => Patient[];
   getArchivedPatients: () => Patient[];
   getRecentlyModified: (limit?: number) => Patient[];
+  refreshPatients: () => Promise<void>;
 }
 
 const PatientContext = createContext<PatientContextType | undefined>(undefined);
 
-// Mock initial patients
-const INITIAL_PATIENTS: Patient[] = [
-  // Vollstation E
-  { id: '1', firstName: 'Hans', lastName: 'Müller', birthDate: '1965-03-15', gender: 'm', caseNumber: 'F2024001', phone: '0171-1234567', email: 'hans.mueller@email.de', catchmentArea: true, diagnosis: 'Depression F32.1', externalReferral: false, substanceAbuse: false, relevantConditions: true, relevantConditionsDetails: 'Diabetes Typ 2', notes: 'Erstaufnahme', admissionType: 'VOLLSTATION', urgency: 'elektiv', vollStation: 'E', preInterviewDate: '2024-01-15T10:30:00Z', admissionDate: '2024-02-01T00:00:00Z', createdBy: 'admin', createdByDisplayName: 'Dr. Admin', createdAt: '2024-01-15T10:30:00Z', lastModifiedBy: 'admin', lastModifiedByDisplayName: 'Dr. Admin', lastModifiedAt: '2024-01-15T10:30:00Z', archived: false },
-  { id: '2', firstName: 'Thomas', lastName: 'Becker', birthDate: '1972-09-12', gender: 'm', phone: '0151-7778899', email: 't.becker@example.de', catchmentArea: true, diagnosis: 'Schizophrenie F20.0', externalReferral: true, substanceAbuse: false, relevantConditions: false, admissionType: 'VOLLSTATION', urgency: 'dringend', vollStation: 'E', preInterviewDate: '2025-11-12T08:30:00Z', admissionDate: '2024-01-20T00:00:00Z', createdBy: 'admin', createdByDisplayName: 'Dr. Admin', createdAt: '2024-01-12T08:30:00Z', lastModifiedBy: 'admin', lastModifiedByDisplayName: 'Dr. Admin', lastModifiedAt: '2024-01-12T08:30:00Z', archived: false },
-  { id: '3', firstName: 'Gerhard', lastName: 'Schulze', birthDate: '1958-11-20', gender: 'm', phone: '0160-1112233', catchmentArea: true, diagnosis: 'Schwere Depression F33.2', externalReferral: true, substanceAbuse: true, substanceAbuseDetails: 'Benzodiazepine', relevantConditions: true, relevantConditionsDetails: 'Bluthochdruck', admissionType: 'VOLLSTATION', urgency: 'dringend', vollStation: 'E', preInterviewDate: '2025-12-10T14:00:00Z', createdBy: 'manager', createdByDisplayName: 'Fr. Manager', createdAt: '2024-01-10T14:00:00Z', lastModifiedBy: 'manager', lastModifiedByDisplayName: 'Fr. Manager', lastModifiedAt: '2024-01-10T14:00:00Z', archived: false },
-  { id: '4', firstName: 'Helga', lastName: 'Braun', birthDate: '1970-05-08', gender: 'w', email: 'h.braun@mail.de', catchmentArea: false, diagnosis: 'Paranoide Schizophrenie F20.0', externalReferral: true, substanceAbuse: false, relevantConditions: false, admissionType: 'VOLLSTATION', urgency: 'elektiv', vollStation: 'E', preInterviewDate: '2024-01-11T09:00:00Z', admissionDate: '2025-02-15T00:00:00Z', createdBy: 'aufnahme', createdByDisplayName: 'Hr. Aufnahme', createdAt: '2024-01-11T09:00:00Z', lastModifiedBy: 'aufnahme', lastModifiedByDisplayName: 'Hr. Aufnahme', lastModifiedAt: '2024-01-11T09:00:00Z', archived: false },
-
-  // Vollstation F
-  { id: '5', firstName: 'Ursula', lastName: 'Krause', birthDate: '1962-02-14', gender: 'w', phone: '0172-5554433', catchmentArea: true, diagnosis: 'Bipolare Störung F31.1', externalReferral: false, substanceAbuse: false, relevantConditions: true, relevantConditionsDetails: 'Schilddrüsenunterfunktion', admissionType: 'VOLLSTATION', urgency: 'elektiv', vollStation: 'F', preInterviewDate: '2025-01-13T11:00:00Z', admissionDate: '2024-02-05T00:00:00Z', createdBy: 'admin', createdByDisplayName: 'Dr. Admin', createdAt: '2024-01-13T11:00:00Z', lastModifiedBy: 'admin', lastModifiedByDisplayName: 'Dr. Admin', lastModifiedAt: '2024-01-13T11:00:00Z', archived: false },
-  { id: '6', firstName: 'Werner', lastName: 'Zimmermann', birthDate: '1955-08-30', gender: 'm', phone: '0163-9998877', email: 'w.zimmermann@web.de', catchmentArea: true, diagnosis: 'Wahnhafte Störung F22.0', externalReferral: true, substanceAbuse: false, relevantConditions: true, relevantConditionsDetails: 'Diabetes, Niereninsuffizienz', admissionType: 'VOLLSTATION', urgency: 'dringend', vollStation: 'F', preInterviewDate: '2025-08-14T15:30:00Z', createdBy: 'manager', createdByDisplayName: 'Fr. Manager', createdAt: '2024-01-14T15:30:00Z', lastModifiedBy: 'manager', lastModifiedByDisplayName: 'Fr. Manager', lastModifiedAt: '2024-01-14T15:30:00Z', archived: false },
-  { id: '7', firstName: 'Ingrid', lastName: 'Hartmann', birthDate: '1968-12-03', gender: 'w', email: 'ingrid.h@email.de', catchmentArea: true, diagnosis: 'Schwere depressive Episode F32.2', externalReferral: false, substanceAbuse: true, substanceAbuseDetails: 'Alkohol', relevantConditions: false, admissionType: 'VOLLSTATION', urgency: 'elektiv', vollStation: 'F', preInterviewDate: '2025-10-15T08:00:00Z', admissionDate: '2024-02-10T00:00:00Z', createdBy: 'aufnahme', createdByDisplayName: 'Hr. Aufnahme', createdAt: '2024-01-15T08:00:00Z', lastModifiedBy: 'aufnahme', lastModifiedByDisplayName: 'Hr. Aufnahme', lastModifiedAt: '2024-01-15T08:00:00Z', archived: false },
-
-  // Vollstation G
-  { id: '8', firstName: 'Dieter', lastName: 'Vogel', birthDate: '1950-04-22', gender: 'm', phone: '0170-3332211', catchmentArea: false, diagnosis: 'Organische Halluzinose F06.0', externalReferral: true, substanceAbuse: false, relevantConditions: true, relevantConditionsDetails: 'Demenz im Frühstadium', admissionType: 'VOLLSTATION', urgency: 'dringend', vollStation: 'G', preInterviewDate: '2024-01-09T10:00:00Z', admissionDate: '2024-01-25T00:00:00Z', createdBy: 'admin', createdByDisplayName: 'Dr. Admin', createdAt: '2024-01-09T10:00:00Z', lastModifiedBy: 'admin', lastModifiedByDisplayName: 'Dr. Admin', lastModifiedAt: '2024-01-09T10:00:00Z', archived: false },
-  { id: '9', firstName: 'Elfriede', lastName: 'Neumann', birthDate: '1948-07-17', gender: 'w', phone: '0151-2223344', email: 'e.neumann@mail.de', catchmentArea: true, diagnosis: 'Katatone Schizophrenie F20.2', externalReferral: true, substanceAbuse: false, relevantConditions: true, relevantConditionsDetails: 'Herzrhythmusstörungen', admissionType: 'VOLLSTATION', urgency: 'elektiv', vollStation: 'G', preInterviewDate: '2024-01-08T13:00:00Z', createdBy: 'manager', createdByDisplayName: 'Fr. Manager', createdAt: '2024-01-08T13:00:00Z', lastModifiedBy: 'manager', lastModifiedByDisplayName: 'Fr. Manager', lastModifiedAt: '2024-01-08T13:00:00Z', archived: false },
-  { id: '10', firstName: 'Rolf', lastName: 'Schwarz', birthDate: '1960-01-25', gender: 'm', email: 'rolf.schwarz@gmx.de', catchmentArea: true, diagnosis: 'Schizoaffektive Störung F25.0', externalReferral: false, substanceAbuse: false, relevantConditions: false, admissionType: 'VOLLSTATION', urgency: 'dringend', vollStation: 'G', preInterviewDate: '2024-01-16T09:30:00Z', admissionDate: '2024-02-20T00:00:00Z', createdBy: 'aufnahme', createdByDisplayName: 'Hr. Aufnahme', createdAt: '2024-01-16T09:30:00Z', lastModifiedBy: 'aufnahme', lastModifiedByDisplayName: 'Hr. Aufnahme', lastModifiedAt: '2024-01-16T09:30:00Z', archived: false },
-  { id: '11', firstName: 'Monika', lastName: 'Richter', birthDate: '1975-09-11', gender: 'w', phone: '0172-6667788', catchmentArea: true, diagnosis: 'Akute polymorphe psychotische Störung F23.1', externalReferral: true, substanceAbuse: true, substanceAbuseDetails: 'Cannabis', relevantConditions: false, admissionType: 'VOLLSTATION', urgency: 'elektiv', vollStation: 'G', preInterviewDate: '2024-01-17T11:00:00Z', createdBy: 'admin', createdByDisplayName: 'Dr. Admin', createdAt: '2024-01-17T11:00:00Z', lastModifiedBy: 'admin', lastModifiedByDisplayName: 'Dr. Admin', lastModifiedAt: '2024-01-17T11:00:00Z', archived: false },
-
-  // Vollstation ohne Zuweisung
-  { id: '12', firstName: 'Heinrich', lastName: 'Lange', birthDate: '1963-06-19', gender: 'm', phone: '0160-4445566', catchmentArea: true, diagnosis: 'Rezidivierende Depression F33.1', externalReferral: false, substanceAbuse: false, relevantConditions: false, admissionType: 'VOLLSTATION', urgency: 'dringend', preInterviewDate: '2024-01-17T16:00:00Z', createdBy: 'aufnahme', createdByDisplayName: 'Hr. Aufnahme', createdAt: '2024-01-17T16:00:00Z', lastModifiedBy: 'aufnahme', lastModifiedByDisplayName: 'Hr. Aufnahme', lastModifiedAt: '2024-01-17T16:00:00Z', archived: false },
-
-  // Teilstation A - Vorgesprächsliste (station zugewiesen, nicht auf Warteliste)
-  { id: '13', firstName: 'Maria', lastName: 'Schmidt', birthDate: '1978-07-22', gender: 'w', phone: '0172-9876543', catchmentArea: true, diagnosis: 'Angststörung F41.0', externalReferral: true, substanceAbuse: false, relevantConditions: false, admissionType: 'TEILSTATION', urgency: 'elektiv', station: 'A', onWaitingList: false, preInterviewDate: '2025-01-20T09:00:00Z', createdBy: 'aufnahme', createdByDisplayName: 'Hr. Aufnahme', createdAt: '2024-01-14T09:00:00Z', lastModifiedBy: 'arzt_a', lastModifiedByDisplayName: 'Dr. Schmidt (A)', lastModifiedAt: '2024-01-16T14:20:00Z', archived: false },
-  { id: '14', firstName: 'Jürgen', lastName: 'Franke', birthDate: '1982-03-05', gender: 'm', email: 'j.franke@email.de', catchmentArea: true, diagnosis: 'Soziale Phobie F40.1', externalReferral: false, substanceAbuse: false, relevantConditions: false, admissionType: 'TEILSTATION', urgency: 'elektiv', station: 'A', onWaitingList: false, preInterviewDate: '2025-01-18T10:00:00Z', createdBy: 'aufnahme', createdByDisplayName: 'Hr. Aufnahme', createdAt: '2024-01-13T10:00:00Z', lastModifiedBy: 'arzt_a', lastModifiedByDisplayName: 'Dr. Schmidt (A)', lastModifiedAt: '2024-01-15T11:00:00Z', archived: false },
-  
-  // Teilstation A - Warteliste (station zugewiesen + auf Warteliste)
-  { id: '15', firstName: 'Claudia', lastName: 'Wolf', birthDate: '1990-11-18', gender: 'w', phone: '0163-1234567', email: 'c.wolf@web.de', catchmentArea: true, diagnosis: 'Panikstörung F41.0', externalReferral: true, substanceAbuse: false, relevantConditions: true, relevantConditionsDetails: 'Asthma', admissionType: 'TEILSTATION', urgency: 'dringend', station: 'A', onWaitingList: true, preInterviewDate: '2025-01-22T14:00:00Z', admissionDate: '2024-02-05T00:00:00Z', createdBy: 'manager', createdByDisplayName: 'Fr. Manager', createdAt: '2024-01-15T14:00:00Z', lastModifiedBy: 'manager', lastModifiedByDisplayName: 'Fr. Manager', lastModifiedAt: '2024-01-15T14:00:00Z', archived: false },
-  { id: '16', firstName: 'Stefan', lastName: 'Berger', birthDate: '1975-08-29', gender: 'm', phone: '0170-9998877', catchmentArea: false, diagnosis: 'Generalisierte Angststörung F41.1', externalReferral: false, substanceAbuse: false, relevantConditions: false, admissionType: 'TEILSTATION', urgency: 'elektiv', station: 'A', onWaitingList: true, preInterviewDate: '2024-01-19T08:30:00Z', admissionDate: '2025-11-30T00:00:00Z', createdBy: 'aufnahme', createdByDisplayName: 'Hr. Aufnahme', createdAt: '2024-01-16T08:30:00Z', lastModifiedBy: 'arzt_a', lastModifiedByDisplayName: 'Dr. Schmidt (A)', lastModifiedAt: '2024-01-17T09:00:00Z', archived: false },
-
-  // Teilstation B - Vorgesprächsliste
-  { id: '17', firstName: 'Anna', lastName: 'Fischer', birthDate: '1985-04-30', gender: 'w', phone: '0163-5551234', catchmentArea: true, diagnosis: 'PTBS F43.1', externalReferral: false, substanceAbuse: false, relevantConditions: true, relevantConditionsDetails: 'Chronische Rückenschmerzen', admissionType: 'TEILSTATION', urgency: 'elektiv', station: 'B', onWaitingList: false, preInterviewDate: '2025-01-20T16:00:00Z', createdBy: 'manager', createdByDisplayName: 'Fr. Manager', createdAt: '2024-01-13T16:00:00Z', lastModifiedBy: 'manager', lastModifiedByDisplayName: 'Fr. Manager', lastModifiedAt: '2024-01-17T09:15:00Z', archived: false },
-  { id: '18', firstName: 'Michael', lastName: 'Hofmann', birthDate: '1988-12-10', gender: 'm', email: 'm.hofmann@mail.de', catchmentArea: true, diagnosis: 'Anpassungsstörung F43.2', externalReferral: true, substanceAbuse: false, relevantConditions: false, admissionType: 'TEILSTATION', urgency: 'elektiv', station: 'B', onWaitingList: false, preInterviewDate: '2024-01-21T11:00:00Z', createdBy: 'aufnahme', createdByDisplayName: 'Hr. Aufnahme', createdAt: '2024-01-14T11:00:00Z', lastModifiedBy: 'arzt_b', lastModifiedByDisplayName: 'Dr. Müller (B)', lastModifiedAt: '2024-01-16T10:00:00Z', archived: false },
-  
-  // Teilstation B - Warteliste
-  { id: '19', firstName: 'Petra', lastName: 'Lorenz', birthDate: '1979-06-14', gender: 'w', phone: '0151-8889900', catchmentArea: true, diagnosis: 'Dissoziative Störung F44.0', externalReferral: false, substanceAbuse: false, relevantConditions: false, admissionType: 'TEILSTATION', urgency: 'dringend', station: 'B', onWaitingList: true, preInterviewDate: '2024-01-23T09:00:00Z', admissionDate: '2024-02-10T00:00:00Z', createdBy: 'manager', createdByDisplayName: 'Fr. Manager', createdAt: '2024-01-15T09:00:00Z', lastModifiedBy: 'arzt_b', lastModifiedByDisplayName: 'Dr. Müller (B)', lastModifiedAt: '2024-01-17T14:00:00Z', archived: false },
-  { id: '20', firstName: 'Andreas', lastName: 'Keller', birthDate: '1992-02-20', gender: 'm', phone: '0172-3334455', email: 'a.keller@gmx.de', catchmentArea: false, diagnosis: 'Reaktive Depression F32.0', externalReferral: true, substanceAbuse: false, relevantConditions: false, admissionType: 'TEILSTATION', urgency: 'elektiv', station: 'B', onWaitingList: true, preInterviewDate: '2025-01-24T13:00:00Z', admissionDate: '2024-02-12T00:00:00Z', createdBy: 'aufnahme', createdByDisplayName: 'Hr. Aufnahme', createdAt: '2024-01-16T13:00:00Z', lastModifiedBy: 'aufnahme', lastModifiedByDisplayName: 'Hr. Aufnahme', lastModifiedAt: '2024-01-16T13:00:00Z', archived: false },
-
-  // Teilstation C - Vorgesprächsliste
-  { id: '21', firstName: 'Sabine', lastName: 'Klein', birthDate: '1995-02-28', gender: 'w', email: 'sabine.klein@web.de', catchmentArea: true, diagnosis: 'Essstörung F50.0', externalReferral: false, substanceAbuse: false, relevantConditions: false, notes: 'Ambulante Vorbehandlung vorhanden', admissionType: 'TEILSTATION', urgency: 'dringend', station: 'C', onWaitingList: false, preInterviewDate: '2024-01-25T10:00:00Z', createdBy: 'aufnahme', createdByDisplayName: 'Hr. Aufnahme', createdAt: '2024-01-17T10:00:00Z', lastModifiedBy: 'arzt_c', lastModifiedByDisplayName: 'Dr. Meier (C)', lastModifiedAt: '2024-01-17T15:30:00Z', archived: false },
-  { id: '22', firstName: 'Frank', lastName: 'Baumann', birthDate: '1983-09-07', gender: 'm', phone: '0160-7778899', catchmentArea: true, diagnosis: 'Bulimia nervosa F50.2', externalReferral: true, substanceAbuse: false, relevantConditions: false, admissionType: 'TEILSTATION', urgency: 'elektiv', station: 'C', onWaitingList: false, preInterviewDate: '2024-01-19T14:00:00Z', createdBy: 'aufnahme', createdByDisplayName: 'Hr. Aufnahme', createdAt: '2024-01-12T14:00:00Z', lastModifiedBy: 'arzt_c', lastModifiedByDisplayName: 'Dr. Meier (C)', lastModifiedAt: '2024-01-14T16:00:00Z', archived: false },
-  
-  // Teilstation C - Warteliste
-  { id: '23', firstName: 'Karin', lastName: 'Schröder', birthDate: '1997-04-12', gender: 'w', email: 'k.schroeder@email.de', phone: '0172-1112233', catchmentArea: true, diagnosis: 'Anorexia nervosa F50.0', externalReferral: false, substanceAbuse: false, relevantConditions: true, relevantConditionsDetails: 'Osteoporose', admissionType: 'TEILSTATION', urgency: 'dringend', station: 'C', onWaitingList: true, preInterviewDate: '2024-01-22T10:30:00Z', admissionDate: '2024-02-05T00:00:00Z', createdBy: 'manager', createdByDisplayName: 'Fr. Manager', createdAt: '2024-01-16T10:30:00Z', lastModifiedBy: 'manager', lastModifiedByDisplayName: 'Fr. Manager', lastModifiedAt: '2024-01-16T10:30:00Z', archived: false },
-  { id: '24', firstName: 'Uwe', lastName: 'Peters', birthDate: '1980-01-30', gender: 'm', phone: '0163-4445566', catchmentArea: false, diagnosis: 'Atypische Essstörung F50.9', externalReferral: true, substanceAbuse: false, relevantConditions: false, admissionType: 'TEILSTATION', urgency: 'elektiv', station: 'C', onWaitingList: true, preInterviewDate: '2024-01-23T08:00:00Z', admissionDate: '2024-02-10T00:00:00Z', createdBy: 'aufnahme', createdByDisplayName: 'Hr. Aufnahme', createdAt: '2024-01-17T08:00:00Z', lastModifiedBy: 'arzt_c', lastModifiedByDisplayName: 'Dr. Meier (C)', lastModifiedAt: '2024-01-17T12:00:00Z', archived: false },
-
-  // Teilstation D - Vorgesprächsliste
-  { id: '25', firstName: 'Birgit', lastName: 'Engel', birthDate: '1986-10-05', gender: 'w', phone: '0170-5556677', email: 'b.engel@mail.de', catchmentArea: true, diagnosis: 'Zwangsstörung F42.0', externalReferral: false, substanceAbuse: false, relevantConditions: false, admissionType: 'TEILSTATION', urgency: 'elektiv', station: 'D', onWaitingList: false, preInterviewDate: '2024-01-18T11:00:00Z', createdBy: 'aufnahme', createdByDisplayName: 'Hr. Aufnahme', createdAt: '2024-01-11T11:00:00Z', lastModifiedBy: 'arzt_d', lastModifiedByDisplayName: 'Dr. Wagner (D)', lastModifiedAt: '2024-01-15T10:00:00Z', archived: false },
-  { id: '26', firstName: 'Martin', lastName: 'Sommer', birthDate: '1974-05-18', gender: 'm', phone: '0151-6667788', catchmentArea: true, diagnosis: 'Zwangsgedanken F42.0', externalReferral: true, substanceAbuse: false, relevantConditions: true, relevantConditionsDetails: 'Migräne', admissionType: 'TEILSTATION', urgency: 'dringend', station: 'D', onWaitingList: false, preInterviewDate: '2024-01-19T09:00:00Z', createdBy: 'manager', createdByDisplayName: 'Fr. Manager', createdAt: '2024-01-12T09:00:00Z', lastModifiedBy: 'arzt_d', lastModifiedByDisplayName: 'Dr. Wagner (D)', lastModifiedAt: '2024-01-16T11:00:00Z', archived: false },
-  
-  // Teilstation D - Warteliste
-  { id: '27', firstName: 'Nicole', lastName: 'Winter', birthDate: '1991-08-23', gender: 'w', email: 'n.winter@web.de', catchmentArea: true, diagnosis: 'Zwangshandlungen F42.1', externalReferral: false, substanceAbuse: false, relevantConditions: false, admissionType: 'TEILSTATION', urgency: 'elektiv', station: 'D', onWaitingList: true, preInterviewDate: '2024-01-20T15:00:00Z', admissionDate: '2024-02-02T00:00:00Z', createdBy: 'aufnahme', createdByDisplayName: 'Hr. Aufnahme', createdAt: '2024-01-14T15:00:00Z', lastModifiedBy: 'aufnahme', lastModifiedByDisplayName: 'Hr. Aufnahme', lastModifiedAt: '2024-01-14T15:00:00Z', archived: false },
-  { id: '28', firstName: 'Oliver', lastName: 'Kaiser', birthDate: '1969-03-27', gender: 'm', phone: '0172-8889900', email: 'o.kaiser@gmx.de', catchmentArea: false, diagnosis: 'Zwangsstörung gemischt F42.2', externalReferral: true, substanceAbuse: false, relevantConditions: true, relevantConditionsDetails: 'Herzinsuffizienz', admissionType: 'TEILSTATION', urgency: 'elektiv', station: 'D', onWaitingList: true, preInterviewDate: '2024-01-21T16:00:00Z', admissionDate: '2024-02-08T00:00:00Z', createdBy: 'manager', createdByDisplayName: 'Fr. Manager', createdAt: '2024-01-15T16:00:00Z', lastModifiedBy: 'arzt_d', lastModifiedByDisplayName: 'Dr. Wagner (D)', lastModifiedAt: '2024-01-17T10:00:00Z', archived: false },
-
-  // Teilstation offen (Anfrageliste - ohne Station)
-  { id: '29', firstName: 'Peter', lastName: 'Weber', birthDate: '1990-11-08', gender: 'm', email: 'p.weber@mail.com', catchmentArea: false, diagnosis: 'Bipolare Störung F31.3', externalReferral: true, substanceAbuse: true, substanceAbuseDetails: 'Alkohol', relevantConditions: false, admissionType: 'TEILSTATION', urgency: 'dringend', preInterviewDate: '2024-01-22T11:45:00Z', createdBy: 'aufnahme', createdByDisplayName: 'Hr. Aufnahme', createdAt: '2024-01-16T11:45:00Z', lastModifiedBy: 'aufnahme', lastModifiedByDisplayName: 'Hr. Aufnahme', lastModifiedAt: '2024-01-16T11:45:00Z', archived: false },
-  { id: '30', firstName: 'Klaus', lastName: 'Hoffmann', birthDate: '1960-06-05', gender: 'm', phone: '0170-4443322', catchmentArea: false, diagnosis: 'Zwangsstörung F42.2', externalReferral: true, substanceAbuse: false, relevantConditions: true, relevantConditionsDetails: 'Herzinsuffizienz', admissionType: 'TEILSTATION', urgency: 'elektiv', preInterviewDate: '2024-01-24T14:00:00Z', createdBy: 'aufnahme', createdByDisplayName: 'Hr. Aufnahme', createdAt: '2024-01-17T14:00:00Z', lastModifiedBy: 'aufnahme', lastModifiedByDisplayName: 'Hr. Aufnahme', lastModifiedAt: '2024-01-17T14:00:00Z', archived: false },
-  { id: '31', firstName: 'Renate', lastName: 'Fuchs', birthDate: '1977-12-01', gender: 'w', phone: '0163-2223344', email: 'r.fuchs@email.de', catchmentArea: true, diagnosis: 'Leichte Depression F32.0', externalReferral: false, substanceAbuse: false, relevantConditions: false, admissionType: 'TEILSTATION', urgency: 'elektiv', preInterviewDate: '2024-01-25T15:00:00Z', createdBy: 'aufnahme', createdByDisplayName: 'Hr. Aufnahme', createdAt: '2024-01-17T15:00:00Z', lastModifiedBy: 'aufnahme', lastModifiedByDisplayName: 'Hr. Aufnahme', lastModifiedAt: '2024-01-17T15:00:00Z', archived: false },
-  { id: '32', firstName: 'Herbert', lastName: 'Stein', birthDate: '1965-04-09', gender: 'm', email: 'h.stein@web.de', catchmentArea: true, diagnosis: 'Somatoforme Störung F45.0', externalReferral: true, substanceAbuse: false, relevantConditions: true, relevantConditionsDetails: 'Chronische Schmerzen', admissionType: 'TEILSTATION', urgency: 'dringend', preInterviewDate: '2024-01-26T16:30:00Z', createdBy: 'manager', createdByDisplayName: 'Fr. Manager', createdAt: '2024-01-17T16:30:00Z', lastModifiedBy: 'manager', lastModifiedByDisplayName: 'Fr. Manager', lastModifiedAt: '2024-01-17T16:30:00Z', archived: false },
-];
+// Helper to map DB row to Patient type
+const mapDbToPatient = (row: any): Patient => ({
+  id: row.id,
+  firstName: row.first_name,
+  lastName: row.last_name,
+  birthDate: row.birth_date,
+  gender: row.gender,
+  caseNumber: row.case_number || undefined,
+  phone: row.phone || undefined,
+  email: row.email || undefined,
+  catchmentArea: row.catchment_area,
+  diagnosis: row.diagnosis,
+  externalReferral: row.external_referral,
+  substanceAbuse: row.substance_abuse,
+  substanceAbuseDetails: row.substance_abuse_details || undefined,
+  relevantConditions: row.relevant_conditions,
+  relevantConditionsDetails: row.relevant_conditions_details || undefined,
+  notes: row.notes || undefined,
+  admissionType: row.admission_type,
+  urgency: row.urgency || undefined,
+  station: row.station || undefined,
+  onWaitingList: row.on_waiting_list || false,
+  vollStation: row.voll_station || undefined,
+  secondaryStation: row.secondary_station || undefined,
+  mondayCall: row.monday_call || false,
+  preInterviewDate: row.pre_interview_date || undefined,
+  admissionDate: row.admission_date || undefined,
+  createdBy: row.created_by,
+  createdByDisplayName: row.created_by_display_name,
+  createdAt: row.created_at,
+  lastModifiedBy: row.last_modified_by,
+  lastModifiedByDisplayName: row.last_modified_by_display_name,
+  lastModifiedAt: row.last_modified_at,
+  archived: row.archived,
+});
 
 export const PatientProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [patients, setPatients] = useState<Patient[]>(INITIAL_PATIENTS);
-  const { user } = useAuth();
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { user, isAuthenticated } = useAuth();
+  const { toast } = useToast();
 
-  const addPatient = useCallback((patientData: Omit<Patient, 'id' | 'createdAt' | 'createdBy' | 'createdByDisplayName' | 'lastModifiedAt' | 'lastModifiedBy' | 'lastModifiedByDisplayName' | 'archived'>) => {
-    const now = new Date().toISOString();
-    const newPatient: Patient = {
-      ...patientData,
-      id: Date.now().toString(),
-      createdBy: user?.username || 'unknown',
-      createdByDisplayName: user?.displayName || 'Unbekannt',
-      createdAt: now,
-      lastModifiedBy: user?.username || 'unknown',
-      lastModifiedByDisplayName: user?.displayName || 'Unbekannt',
-      lastModifiedAt: now,
-      archived: false,
-    };
-    setPatients(prev => [...prev, newPatient]);
-  }, [user]);
+  // Fetch patients from database
+  const fetchPatients = useCallback(async () => {
+    if (!isAuthenticated) {
+      setPatients([]);
+      setIsLoading(false);
+      return;
+    }
 
-  const updatePatient = useCallback((id: string, updates: Partial<Patient>) => {
-    setPatients(prev => prev.map(p => {
-      if (p.id === id) {
-        return {
-          ...p,
-          ...updates,
-          lastModifiedBy: user?.username || 'unknown',
-          lastModifiedByDisplayName: user?.displayName || 'Unbekannt',
-          lastModifiedAt: new Date().toISOString(),
-        };
+    try {
+      const { data, error } = await supabase
+        .from('patients')
+        .select('*')
+        .order('last_modified_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching patients:', error);
+        toast({
+          title: 'Fehler',
+          description: 'Patientendaten konnten nicht geladen werden.',
+          variant: 'destructive',
+        });
+        return;
       }
-      return p;
-    }));
-  }, [user]);
 
-  const archivePatient = useCallback((id: string) => {
-    updatePatient(id, { archived: true });
+      setPatients((data || []).map(mapDbToPatient));
+    } catch (error) {
+      console.error('Error in fetchPatients:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isAuthenticated, toast]);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchPatients();
+  }, [fetchPatients]);
+
+  const refreshPatients = useCallback(async () => {
+    await fetchPatients();
+  }, [fetchPatients]);
+
+  const addPatient = useCallback(async (
+    patientData: Omit<Patient, 'id' | 'createdAt' | 'createdBy' | 'createdByDisplayName' | 'lastModifiedAt' | 'lastModifiedBy' | 'lastModifiedByDisplayName' | 'archived'>
+  ): Promise<Patient | null> => {
+    if (!user) return null;
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user.id;
+      
+      if (!userId) {
+        toast({
+          title: 'Fehler',
+          description: 'Nicht angemeldet.',
+          variant: 'destructive',
+        });
+        return null;
+      }
+
+      const dbData = {
+        first_name: patientData.firstName,
+        last_name: patientData.lastName,
+        birth_date: patientData.birthDate,
+        gender: patientData.gender,
+        case_number: patientData.caseNumber || null,
+        phone: patientData.phone || null,
+        email: patientData.email || null,
+        catchment_area: patientData.catchmentArea,
+        diagnosis: patientData.diagnosis,
+        external_referral: patientData.externalReferral,
+        substance_abuse: patientData.substanceAbuse,
+        substance_abuse_details: patientData.substanceAbuseDetails || null,
+        relevant_conditions: patientData.relevantConditions,
+        relevant_conditions_details: patientData.relevantConditionsDetails || null,
+        notes: patientData.notes || null,
+        admission_type: patientData.admissionType,
+        urgency: patientData.urgency || null,
+        station: patientData.station || null,
+        on_waiting_list: patientData.onWaitingList || false,
+        voll_station: patientData.vollStation || null,
+        secondary_station: patientData.secondaryStation || null,
+        monday_call: patientData.mondayCall || false,
+        pre_interview_date: patientData.preInterviewDate || null,
+        admission_date: patientData.admissionDate || null,
+        created_by: userId,
+        created_by_display_name: user.displayName,
+        last_modified_by: userId,
+        last_modified_by_display_name: user.displayName,
+      };
+
+      const { data, error } = await supabase
+        .from('patients')
+        .insert(dbData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error adding patient:', error);
+        toast({
+          title: 'Fehler',
+          description: 'Patient konnte nicht angelegt werden.',
+          variant: 'destructive',
+        });
+        return null;
+      }
+
+      const newPatient = mapDbToPatient(data);
+      setPatients(prev => [newPatient, ...prev]);
+      
+      toast({
+        title: 'Erfolg',
+        description: 'Patient wurde angelegt.',
+      });
+      
+      return newPatient;
+    } catch (error) {
+      console.error('Error in addPatient:', error);
+      return null;
+    }
+  }, [user, toast]);
+
+  const updatePatient = useCallback(async (id: string, updates: Partial<Patient>): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user.id;
+      
+      if (!userId) return false;
+
+      const dbUpdates: Record<string, any> = {
+        last_modified_by: userId,
+        last_modified_by_display_name: user.displayName,
+      };
+
+      // Map Patient fields to DB columns
+      if (updates.firstName !== undefined) dbUpdates.first_name = updates.firstName;
+      if (updates.lastName !== undefined) dbUpdates.last_name = updates.lastName;
+      if (updates.birthDate !== undefined) dbUpdates.birth_date = updates.birthDate;
+      if (updates.gender !== undefined) dbUpdates.gender = updates.gender;
+      if (updates.caseNumber !== undefined) dbUpdates.case_number = updates.caseNumber || null;
+      if (updates.phone !== undefined) dbUpdates.phone = updates.phone || null;
+      if (updates.email !== undefined) dbUpdates.email = updates.email || null;
+      if (updates.catchmentArea !== undefined) dbUpdates.catchment_area = updates.catchmentArea;
+      if (updates.diagnosis !== undefined) dbUpdates.diagnosis = updates.diagnosis;
+      if (updates.externalReferral !== undefined) dbUpdates.external_referral = updates.externalReferral;
+      if (updates.substanceAbuse !== undefined) dbUpdates.substance_abuse = updates.substanceAbuse;
+      if (updates.substanceAbuseDetails !== undefined) dbUpdates.substance_abuse_details = updates.substanceAbuseDetails || null;
+      if (updates.relevantConditions !== undefined) dbUpdates.relevant_conditions = updates.relevantConditions;
+      if (updates.relevantConditionsDetails !== undefined) dbUpdates.relevant_conditions_details = updates.relevantConditionsDetails || null;
+      if (updates.notes !== undefined) dbUpdates.notes = updates.notes || null;
+      if (updates.admissionType !== undefined) dbUpdates.admission_type = updates.admissionType;
+      if (updates.urgency !== undefined) dbUpdates.urgency = updates.urgency || null;
+      if (updates.station !== undefined) dbUpdates.station = updates.station || null;
+      if (updates.onWaitingList !== undefined) dbUpdates.on_waiting_list = updates.onWaitingList;
+      if (updates.vollStation !== undefined) dbUpdates.voll_station = updates.vollStation || null;
+      if (updates.secondaryStation !== undefined) dbUpdates.secondary_station = updates.secondaryStation || null;
+      if (updates.mondayCall !== undefined) dbUpdates.monday_call = updates.mondayCall;
+      if (updates.preInterviewDate !== undefined) dbUpdates.pre_interview_date = updates.preInterviewDate || null;
+      if (updates.admissionDate !== undefined) dbUpdates.admission_date = updates.admissionDate || null;
+      if (updates.archived !== undefined) dbUpdates.archived = updates.archived;
+
+      const { data, error } = await supabase
+        .from('patients')
+        .update(dbUpdates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating patient:', error);
+        toast({
+          title: 'Fehler',
+          description: 'Patient konnte nicht aktualisiert werden.',
+          variant: 'destructive',
+        });
+        return false;
+      }
+
+      const updatedPatient = mapDbToPatient(data);
+      setPatients(prev => prev.map(p => p.id === id ? updatedPatient : p));
+      return true;
+    } catch (error) {
+      console.error('Error in updatePatient:', error);
+      return false;
+    }
+  }, [user, toast]);
+
+  const archivePatient = useCallback(async (id: string): Promise<boolean> => {
+    const success = await updatePatient(id, { archived: true });
+    if (success) {
+      toast({
+        title: 'Erfolg',
+        description: 'Patient wurde archiviert.',
+      });
+    }
+    return success;
+  }, [updatePatient, toast]);
+
+  const restorePatient = useCallback(async (id: string): Promise<boolean> => {
+    const success = await updatePatient(id, { archived: false });
+    if (success) {
+      toast({
+        title: 'Erfolg',
+        description: 'Patient wurde wiederhergestellt.',
+      });
+    }
+    return success;
+  }, [updatePatient, toast]);
+
+  const assignStation = useCallback(async (id: string, station: Station): Promise<boolean> => {
+    return updatePatient(id, { station, onWaitingList: false });
   }, [updatePatient]);
 
-  const restorePatient = useCallback((id: string) => {
-    updatePatient(id, { archived: false });
-  }, [updatePatient]);
-
-  const assignStation = useCallback((id: string, station: Station) => {
-    updatePatient(id, { station, onWaitingList: false });
-  }, [updatePatient]);
-
-  const moveToWaitingList = useCallback((id: string, admissionDate?: string) => {
+  const moveToWaitingList = useCallback(async (id: string, admissionDate?: string): Promise<boolean> => {
     const updates: Partial<Patient> = { onWaitingList: true };
     if (admissionDate) {
       updates.admissionDate = admissionDate;
     }
-    updatePatient(id, updates);
+    return updatePatient(id, updates);
   }, [updatePatient]);
 
   const getVollstationPatients = useCallback((): Patient[] => {
@@ -185,6 +337,7 @@ export const PatientProvider: React.FC<{ children: React.ReactNode }> = ({ child
     <PatientContext.Provider
       value={{
         patients,
+        isLoading,
         addPatient,
         updatePatient,
         archivePatient,
@@ -200,6 +353,7 @@ export const PatientProvider: React.FC<{ children: React.ReactNode }> = ({ child
         getVollStationPatients,
         getArchivedPatients,
         getRecentlyModified,
+        refreshPatients,
       }}
     >
       {children}
