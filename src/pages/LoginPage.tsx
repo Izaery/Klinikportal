@@ -9,8 +9,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
-  const [username, setUsername] = useState('');
+  const { login, isLoading: authLoading } = useAuth();
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -22,11 +22,11 @@ const LoginPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const success = await login(username, password);
-      if (success) {
+      const result = await login(email, password);
+      if (result.success) {
         navigate('/dashboard');
       } else {
-        setError('Ungültiger Benutzername oder Passwort');
+        setError(result.error || 'Ungültige E-Mail oder Passwort');
       }
     } catch {
       setError('Ein Fehler ist aufgetreten');
@@ -60,15 +60,15 @@ const LoginPage: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Benutzername</Label>
+              <Label htmlFor="email">E-Mail</Label>
               <Input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Benutzername eingeben"
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="ihre.email@klinik.de"
                 required
-                autoComplete="username"
+                autoComplete="email"
               />
             </div>
 
@@ -95,21 +95,17 @@ const LoginPage: React.FC = () => {
               </div>
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full" disabled={isLoading || authLoading}>
               {isLoading ? 'Wird angemeldet...' : 'Anmelden'}
             </Button>
           </form>
         </div>
 
-        {/* Demo Info */}
+        {/* Info */}
         <div className="mt-6 p-4 rounded-lg bg-muted/50 border border-border animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          <p className="text-sm font-medium text-foreground mb-2">Demo-Zugänge:</p>
-          <div className="space-y-1 text-xs text-muted-foreground">
-            <p><span className="font-medium">Admin:</span> admin / admin123</p>
-            <p><span className="font-medium">Manager:</span> manager / manager123</p>
-            <p><span className="font-medium">Aufnahme:</span> aufnahme / aufnahme123</p>
-            <p><span className="font-medium">Arzt A:</span> arzt_a / arzt123</p>
-          </div>
+          <p className="text-sm text-muted-foreground text-center">
+            Bitte verwenden Sie Ihre Klinik-E-Mail-Adresse und Ihr Passwort.
+          </p>
         </div>
       </div>
     </div>
