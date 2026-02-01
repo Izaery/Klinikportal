@@ -316,7 +316,7 @@ export const PatientTable: React.FC<PatientTableProps> = ({
                           )}
                           {col.key === 'preInterviewDate' && (
                             patient.preInterviewDate ? (
-                              <span className="text-sm">{formatDate(patient.preInterviewDate)}</span>
+                              <span className="text-sm">{formatDateTime(patient.preInterviewDate)}</span>
                             ) : (
                               <span className="text-muted-foreground">-</span>
                             )
