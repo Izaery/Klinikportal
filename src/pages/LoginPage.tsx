@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { login, isLoading: authLoading } = useAuth();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -22,11 +22,13 @@ const LoginPage: React.FC = () => {
     setIsLoading(true);
 
     try {
+      // Convert username to email format for Supabase Auth
+      const email = `${username.toLowerCase()}@clinic.local`;
       const result = await login(email, password);
       if (result.success) {
         navigate('/dashboard');
       } else {
-        setError(result.error || 'Ungültige E-Mail oder Passwort');
+        setError(result.error || 'Ungültiger Benutzername oder Passwort');
       }
     } catch {
       setError('Ein Fehler ist aufgetreten');
@@ -60,15 +62,15 @@ const LoginPage: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">E-Mail</Label>
+              <Label htmlFor="username">Benutzername</Label>
               <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="ihre.email@klinik.de"
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Benutzername eingeben"
                 required
-                autoComplete="email"
+                autoComplete="username"
               />
             </div>
 
@@ -104,7 +106,7 @@ const LoginPage: React.FC = () => {
         {/* Info */}
         <div className="mt-6 p-4 rounded-lg bg-muted/50 border border-border animate-fade-in" style={{ animationDelay: '0.2s' }}>
           <p className="text-sm text-muted-foreground text-center">
-            Bitte verwenden Sie Ihre Klinik-E-Mail-Adresse und Ihr Passwort.
+            Bitte verwenden Sie Ihren Klinik-Benutzernamen und Ihr Passwort.
           </p>
         </div>
       </div>
