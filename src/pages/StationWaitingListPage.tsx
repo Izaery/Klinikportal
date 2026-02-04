@@ -1,7 +1,7 @@
 import React from 'react';
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
-import { usePatients } from '@/contexts/PatientContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { usePatients } from '@/contexts/PatientContext.standalone';
+import { useAuth } from '@/contexts/AuthContext.standalone';
 import { PatientTable } from '@/components/patients/PatientTable';
 import { Patient, Station, STATION_LABELS } from '@/types';
 import { Badge } from '@/components/ui/badge';

@@ -14,7 +14,7 @@ import { Patient, Station, VollStation, URGENCY_LABELS, STATION_LABELS, VOLL_STA
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext.standalone';
 import { cn } from '@/lib/utils';
 
 type SortField = 'lastName' | 'firstName' | 'birthDate' | 'diagnosis' | 'station' | 'vollStation' | 'urgency' | 'lastModifiedAt' | 'preInterviewDate' | 'admissionDate' | 'waitingTime' | 'mondayCall';

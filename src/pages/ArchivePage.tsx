@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Archive, RotateCcw, Search } from 'lucide-react';
-import { usePatients } from '@/contexts/PatientContext';
+import { usePatients } from '@/contexts/PatientContext.standalone';
 import { Patient, STATION_LABELS, VOLL_STATION_LABELS } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

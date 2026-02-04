@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { usePatients } from '@/contexts/PatientContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { usePatients } from '@/contexts/PatientContext.standalone';
+import { useAuth } from '@/contexts/AuthContext.standalone';
 import { PatientTable } from '@/components/patients/PatientTable';
 import { Patient, VOLL_STATION_LABELS, URGENCY_LABELS } from '@/types';
 import { toast } from 'sonner';
