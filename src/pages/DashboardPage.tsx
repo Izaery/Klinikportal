@@ -5,8 +5,8 @@ import {
   ClipboardList, 
   Clock
 } from 'lucide-react';
-import { usePatients } from '@/contexts/PatientContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { usePatients } from '@/contexts/PatientContext.standalone';
+import { useAuth } from '@/contexts/AuthContext.standalone';
 import { Badge } from '@/components/ui/badge';
 import { STATION_LABELS, URGENCY_LABELS, VOLL_STATION_LABELS } from '@/types';
 import { useNavigate } from 'react-router-dom';
