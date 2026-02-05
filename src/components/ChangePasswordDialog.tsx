@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext.standalone';
+ import { useAuth } from '@/contexts/AuthContext';
 import {
   Dialog,
   DialogContent,
@@ -61,7 +61,7 @@ const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({ trigger }) 
 
     setIsLoading(true);
     try {
-      const success = await changePassword(newPassword);
+     const success = await changePassword(newPassword, oldPassword);
       if (success) {
         toast.success('Kennwort erfolgreich geändert');
         setOpen(false);

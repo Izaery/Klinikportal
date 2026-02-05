@@ -3,8 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext.standalone";
-import { PatientProvider } from "@/contexts/PatientContext.standalone";
+ import { AuthProvider } from "@/contexts/AuthContext";
+ import { PatientProvider } from "@/contexts/PatientContext";
 import { MainLayout } from "@/components/layout/MainLayout";
 
 // Pages

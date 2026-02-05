@@ -1,15 +1,14 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { User, UserRole, Station, STATION_ROLES } from '@/types';
-import { supabase } from '@/integrations/supabase/client';
-import type { Session } from '@supabase/supabase-js';
+import { authApi, getAuthToken, setAuthToken } from '@/lib/api-client';
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
-  changePassword: (newPassword: string) => Promise<boolean>;
+  changePassword: (newPassword: string, currentPassword?: string) => Promise<boolean>;
   hasRole: (role: UserRole) => boolean;
   hasAnyRole: (roles: UserRole[]) => boolean;
   canViewVollstation: () => boolean;
@@ -45,49 +44,27 @@ const mapDbRoleToUserRole = (dbRole: string): UserRole | null => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [session, setSession] = useState<Session | null>(null);
 
-  // Fetch user profile and roles
-  const fetchUserData = useCallback(async (userId: string): Promise<User | null> => {
+  // Fetch user data from API
+  const fetchUserData = useCallback(async (): Promise<User | null> => {
     try {
-      // Fetch profile
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
+      const { data, error } = await authApi.getCurrentUser();
 
-      if (profileError) {
-        console.error('Error fetching profile:', profileError);
+      if (error || !data) {
+        console.error('Error fetching user:', error);
         return null;
       }
 
-      if (!profile) {
-        console.error('No profile found for user');
-        return null;
-      }
-
-      // Fetch roles
-      const { data: rolesData, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId);
-
-      if (rolesError) {
-        console.error('Error fetching roles:', rolesError);
-        return null;
-      }
-
-      const roles: UserRole[] = (rolesData || [])
-        .map(r => mapDbRoleToUserRole(r.role))
-        .filter((r): r is UserRole => r !== null);
+      const roles: UserRole[] = (data.roles || [])
+        .map((r: string) => mapDbRoleToUserRole(r))
+        .filter((r: UserRole | null): r is UserRole => r !== null);
 
       return {
-        id: userId,
-        username: profile.username,
-        displayName: profile.display_name,
+        id: data.id,
+        username: data.username,
+        displayName: data.displayName,
         roles,
-        createdAt: profile.created_at,
+        createdAt: data.createdAt,
       };
     } catch (error) {
       console.error('Error in fetchUserData:', error);
@@ -95,73 +72,65 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Initialize auth state
+  // Initialize auth state from stored token
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        fetchUserData(session.user.id).then(userData => {
-          setUser(userData);
-          setIsLoading(false);
-        });
-      } else {
-        setIsLoading(false);
-      }
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setSession(session);
-      if (session?.user) {
-        const userData = await fetchUserData(session.user.id);
-        setUser(userData);
-      } else {
-        setUser(null);
-      }
-      setIsLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [fetchUserData]);
-
-  const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        console.error('Login error:', error);
-        return { success: false, error: error.message };
-      }
-
-      if (data.user) {
-        const userData = await fetchUserData(data.user.id);
+    const initAuth = async () => {
+      const token = getAuthToken();
+      if (token) {
+        const userData = await fetchUserData();
         if (userData) {
           setUser(userData);
-          return { success: true };
+        } else {
+          // Token invalid, clear it
+          setAuthToken(null);
         }
-        return { success: false, error: 'Benutzerprofil nicht gefunden' };
+      }
+      setIsLoading(false);
+    };
+
+    initAuth();
+  }, [fetchUserData]);
+
+  const login = useCallback(async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { data, error } = await authApi.login(username, password);
+
+      if (error || !data) {
+        return { success: false, error: error || 'Anmeldung fehlgeschlagen' };
       }
 
-      return { success: false, error: 'Anmeldung fehlgeschlagen' };
+      const roles: UserRole[] = (data.user.roles || [])
+        .map((r: string) => mapDbRoleToUserRole(r))
+        .filter((r: UserRole | null): r is UserRole => r !== null);
+
+      const userData: User = {
+        id: data.user.id,
+        username: data.user.username,
+        displayName: data.user.displayName,
+        roles,
+        createdAt: new Date().toISOString(),
+      };
+
+      setUser(userData);
+      return { success: true };
     } catch (error) {
       console.error('Login exception:', error);
       return { success: false, error: 'Ein unerwarteter Fehler ist aufgetreten' };
     }
-  }, [fetchUserData]);
-
-  const logout = useCallback(async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
   }, []);
 
-  const changePassword = useCallback(async (newPassword: string): Promise<boolean> => {
+  const logout = useCallback(async () => {
+    authApi.logout();
+    setUser(null);
+  }, []);
+
+  const changePassword = useCallback(async (newPassword: string, currentPassword?: string): Promise<boolean> => {
     try {
-      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (!currentPassword) {
+        console.error('Current password required for standalone mode');
+        return false;
+      }
+      const { error } = await authApi.changePassword(currentPassword, newPassword);
       return !error;
     } catch {
       return false;
@@ -179,7 +148,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Check if user has only read-only roles (Pflege)
   const isReadOnly = useCallback((): boolean => {
     if (!user) return true;
-    // If user has any of the editing roles, they're not read-only
     const editingRoles: UserRole[] = ['ADMIN', 'MANAGER', 'INTAKE', 'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d'];
     return !editingRoles.some(role => user.roles.includes(role));
   }, [user]);
@@ -189,19 +157,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [hasAnyRole]);
 
   const canEditPatients = useCallback((): boolean => {
-    // Pflege roles cannot edit
     if (isReadOnly()) return false;
     return hasAnyRole(['ADMIN', 'MANAGER']);
   }, [hasAnyRole, isReadOnly]);
 
   const canDeletePatients = useCallback((): boolean => {
-    // Pflege roles cannot delete
     if (isReadOnly()) return false;
     return hasAnyRole(['ADMIN', 'MANAGER']);
   }, [hasAnyRole, isReadOnly]);
 
   const canAssignStation = useCallback((): boolean => {
-    // Pflege roles cannot assign
     if (isReadOnly()) return false;
     return hasAnyRole(['ADMIN', 'MANAGER', 'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d']);
   }, [hasAnyRole, isReadOnly]);
@@ -233,7 +198,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: !!user && !!session,
+        isAuthenticated: !!user,
         isLoading,
         login,
         logout,
