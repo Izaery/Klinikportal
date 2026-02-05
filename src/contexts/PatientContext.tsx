@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { Patient, Station, VollStation } from '@/types';
-import { useAuth } from './AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+ import { useAuth } from './AuthContext';
+import { patientsApi } from '@/lib/api-client';
 import { useToast } from '@/hooks/use-toast';
 
 interface PatientContextType {
@@ -63,13 +63,46 @@ const mapDbToPatient = (row: any): Patient => ({
   archived: row.archived,
 });
 
+// Helper to map Patient to DB format
+const mapPatientToDb = (patient: Partial<Patient>): Record<string, any> => {
+  const dbData: Record<string, any> = {};
+  
+  if (patient.firstName !== undefined) dbData.first_name = patient.firstName;
+  if (patient.lastName !== undefined) dbData.last_name = patient.lastName;
+  if (patient.birthDate !== undefined) dbData.birth_date = patient.birthDate;
+  if (patient.gender !== undefined) dbData.gender = patient.gender;
+  if (patient.caseNumber !== undefined) dbData.case_number = patient.caseNumber || null;
+  if (patient.phone !== undefined) dbData.phone = patient.phone || null;
+  if (patient.email !== undefined) dbData.email = patient.email || null;
+  if (patient.catchmentArea !== undefined) dbData.catchment_area = patient.catchmentArea;
+  if (patient.diagnosis !== undefined) dbData.diagnosis = patient.diagnosis;
+  if (patient.externalReferral !== undefined) dbData.external_referral = patient.externalReferral;
+  if (patient.substanceAbuse !== undefined) dbData.substance_abuse = patient.substanceAbuse;
+  if (patient.substanceAbuseDetails !== undefined) dbData.substance_abuse_details = patient.substanceAbuseDetails || null;
+  if (patient.relevantConditions !== undefined) dbData.relevant_conditions = patient.relevantConditions;
+  if (patient.relevantConditionsDetails !== undefined) dbData.relevant_conditions_details = patient.relevantConditionsDetails || null;
+  if (patient.notes !== undefined) dbData.notes = patient.notes || null;
+  if (patient.admissionType !== undefined) dbData.admission_type = patient.admissionType;
+  if (patient.urgency !== undefined) dbData.urgency = patient.urgency || null;
+  if (patient.station !== undefined) dbData.station = patient.station || null;
+  if (patient.onWaitingList !== undefined) dbData.on_waiting_list = patient.onWaitingList;
+  if (patient.vollStation !== undefined) dbData.voll_station = patient.vollStation || null;
+  if (patient.secondaryStation !== undefined) dbData.secondary_station = patient.secondaryStation || null;
+  if (patient.mondayCall !== undefined) dbData.monday_call = patient.mondayCall;
+  if (patient.preInterviewDate !== undefined) dbData.pre_interview_date = patient.preInterviewDate || null;
+  if (patient.admissionDate !== undefined) dbData.admission_date = patient.admissionDate || null;
+  if (patient.archived !== undefined) dbData.archived = patient.archived;
+  
+  return dbData;
+};
+
 export const PatientProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
 
-  // Fetch patients from database
+  // Fetch patients from API
   const fetchPatients = useCallback(async () => {
     if (!isAuthenticated) {
       setPatients([]);
@@ -78,10 +111,7 @@ export const PatientProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
 
     try {
-      const { data, error } = await supabase
-        .from('patients')
-        .select('*')
-        .order('last_modified_at', { ascending: false });
+      const { data, error } = await patientsApi.getAll();
 
       if (error) {
         console.error('Error fetching patients:', error);
@@ -116,56 +146,11 @@ export const PatientProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (!user) return null;
 
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData.session?.user.id;
-      
-      if (!userId) {
-        toast({
-          title: 'Fehler',
-          description: 'Nicht angemeldet.',
-          variant: 'destructive',
-        });
-        return null;
-      }
+      const dbData = mapPatientToDb(patientData);
 
-      const dbData = {
-        first_name: patientData.firstName,
-        last_name: patientData.lastName,
-        birth_date: patientData.birthDate,
-        gender: patientData.gender,
-        case_number: patientData.caseNumber || null,
-        phone: patientData.phone || null,
-        email: patientData.email || null,
-        catchment_area: patientData.catchmentArea,
-        diagnosis: patientData.diagnosis,
-        external_referral: patientData.externalReferral,
-        substance_abuse: patientData.substanceAbuse,
-        substance_abuse_details: patientData.substanceAbuseDetails || null,
-        relevant_conditions: patientData.relevantConditions,
-        relevant_conditions_details: patientData.relevantConditionsDetails || null,
-        notes: patientData.notes || null,
-        admission_type: patientData.admissionType,
-        urgency: patientData.urgency || null,
-        station: patientData.station || null,
-        on_waiting_list: patientData.onWaitingList || false,
-        voll_station: patientData.vollStation || null,
-        secondary_station: patientData.secondaryStation || null,
-        monday_call: patientData.mondayCall || false,
-        pre_interview_date: patientData.preInterviewDate || null,
-        admission_date: patientData.admissionDate || null,
-        created_by: userId,
-        created_by_display_name: user.displayName,
-        last_modified_by: userId,
-        last_modified_by_display_name: user.displayName,
-      };
+      const { data, error } = await patientsApi.create(dbData);
 
-      const { data, error } = await supabase
-        .from('patients')
-        .insert(dbData)
-        .select()
-        .single();
-
-      if (error) {
+      if (error || !data) {
         console.error('Error adding patient:', error);
         toast({
           title: 'Fehler',
@@ -194,51 +179,11 @@ export const PatientProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (!user) return false;
 
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData.session?.user.id;
-      
-      if (!userId) return false;
+      const dbUpdates = mapPatientToDb(updates);
 
-      const dbUpdates: Record<string, any> = {
-        last_modified_by: userId,
-        last_modified_by_display_name: user.displayName,
-      };
+      const { data, error } = await patientsApi.update(id, dbUpdates);
 
-      // Map Patient fields to DB columns
-      if (updates.firstName !== undefined) dbUpdates.first_name = updates.firstName;
-      if (updates.lastName !== undefined) dbUpdates.last_name = updates.lastName;
-      if (updates.birthDate !== undefined) dbUpdates.birth_date = updates.birthDate;
-      if (updates.gender !== undefined) dbUpdates.gender = updates.gender;
-      if (updates.caseNumber !== undefined) dbUpdates.case_number = updates.caseNumber || null;
-      if (updates.phone !== undefined) dbUpdates.phone = updates.phone || null;
-      if (updates.email !== undefined) dbUpdates.email = updates.email || null;
-      if (updates.catchmentArea !== undefined) dbUpdates.catchment_area = updates.catchmentArea;
-      if (updates.diagnosis !== undefined) dbUpdates.diagnosis = updates.diagnosis;
-      if (updates.externalReferral !== undefined) dbUpdates.external_referral = updates.externalReferral;
-      if (updates.substanceAbuse !== undefined) dbUpdates.substance_abuse = updates.substanceAbuse;
-      if (updates.substanceAbuseDetails !== undefined) dbUpdates.substance_abuse_details = updates.substanceAbuseDetails || null;
-      if (updates.relevantConditions !== undefined) dbUpdates.relevant_conditions = updates.relevantConditions;
-      if (updates.relevantConditionsDetails !== undefined) dbUpdates.relevant_conditions_details = updates.relevantConditionsDetails || null;
-      if (updates.notes !== undefined) dbUpdates.notes = updates.notes || null;
-      if (updates.admissionType !== undefined) dbUpdates.admission_type = updates.admissionType;
-      if (updates.urgency !== undefined) dbUpdates.urgency = updates.urgency || null;
-      if (updates.station !== undefined) dbUpdates.station = updates.station || null;
-      if (updates.onWaitingList !== undefined) dbUpdates.on_waiting_list = updates.onWaitingList;
-      if (updates.vollStation !== undefined) dbUpdates.voll_station = updates.vollStation || null;
-      if (updates.secondaryStation !== undefined) dbUpdates.secondary_station = updates.secondaryStation || null;
-      if (updates.mondayCall !== undefined) dbUpdates.monday_call = updates.mondayCall;
-      if (updates.preInterviewDate !== undefined) dbUpdates.pre_interview_date = updates.preInterviewDate || null;
-      if (updates.admissionDate !== undefined) dbUpdates.admission_date = updates.admissionDate || null;
-      if (updates.archived !== undefined) dbUpdates.archived = updates.archived;
-
-      const { data, error } = await supabase
-        .from('patients')
-        .update(dbUpdates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
+      if (error || !data) {
         console.error('Error updating patient:', error);
         toast({
           title: 'Fehler',
@@ -303,17 +248,14 @@ export const PatientProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return patients.filter(p => !p.archived && p.admissionType === 'TEILSTATION' && !p.station);
   }, [patients]);
 
-  // Vorgesprächsliste: Station zugewiesen, aber noch nicht auf Warteliste
   const getStationPreInterviewPatients = useCallback((station: Station): Patient[] => {
     return patients.filter(p => !p.archived && p.admissionType === 'TEILSTATION' && p.station === station && !p.onWaitingList);
   }, [patients]);
 
-  // Warteliste: Station zugewiesen und auf Warteliste
   const getStationWaitingListPatients = useCallback((station: Station): Patient[] => {
     return patients.filter(p => !p.archived && p.admissionType === 'TEILSTATION' && p.station === station && p.onWaitingList);
   }, [patients]);
 
-  // Alle Patienten einer Station (Vorgesprächs- und Warteliste)
   const getStationPatients = useCallback((station: Station): Patient[] => {
     return patients.filter(p => !p.archived && p.admissionType === 'TEILSTATION' && p.station === station);
   }, [patients]);
