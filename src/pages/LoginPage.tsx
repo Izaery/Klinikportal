@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building2, Eye, EyeOff, AlertCircle } from 'lucide-react';
- import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { API_BASE_URL } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,15 +17,33 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const connectionHints = useMemo(() => {
+    if (typeof window === 'undefined') return { show: false } as const;
+
+    const originProtocol = window.location.protocol;
+    const originHost = window.location.hostname;
+
+    const isLovablePreview = originHost.endsWith('lovable.app');
+    const isHttpsPage = originProtocol === 'https:';
+    const isHttpBackend = API_BASE_URL.startsWith('http://');
+    const isLocalBackend = /localhost|127\.0\.0\.1/i.test(API_BASE_URL);
+
+    return {
+      show: true,
+      isLovablePreview,
+      isHttpsPage,
+      isHttpBackend,
+      isLocalBackend,
+    } as const;
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
     try {
-      // Convert username to email format for Supabase Auth
-      const email = `${username.toLowerCase()}@clinic.local`;
-      const result = await login(email, password);
+      const result = await login(username, password);
       if (result.success) {
         navigate('/dashboard');
       } else {
@@ -108,6 +127,29 @@ const LoginPage: React.FC = () => {
           <p className="text-sm text-muted-foreground text-center">
             Bitte verwenden Sie Ihren Klinik-Benutzernamen und Ihr Passwort.
           </p>
+
+          {connectionHints.show && (
+            <div className="mt-3 text-xs text-muted-foreground space-y-2">
+              <p>
+                Backend:&nbsp;
+                <code className="px-1 py-0.5 rounded bg-muted border border-border">{API_BASE_URL}</code>
+              </p>
+
+              {connectionHints.isLovablePreview && connectionHints.isLocalBackend && (
+                <p>
+                  Hinweis: In der Vorschau hier kann <code>localhost</code> nicht erreicht werden. Bitte teste das Frontend
+                  über deine eigene URL/auf deinem Rechner.
+                </p>
+              )}
+
+              {connectionHints.isHttpsPage && connectionHints.isHttpBackend && (
+                <p>
+                  Hinweis: Diese Seite läuft über <code>https</code>. Ein <code>http</code>-Backend wird vom Browser
+                  blockiert (Mixed Content). Nutze HTTPS fürs Backend oder rufe das Frontend per HTTP auf.
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
