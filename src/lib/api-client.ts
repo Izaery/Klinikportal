@@ -1,7 +1,7 @@
 // API-Client für lokalen PostgreSQL-Server
 // Ersetzt den Supabase-Client für Standalone-Betrieb
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 // Token-Verwaltung
 let authToken: string | null = localStorage.getItem('auth_token');
