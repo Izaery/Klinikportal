@@ -15,9 +15,8 @@ export interface AuthenticatedRequest extends Request {
 const JWT_SECRET = process.env.JWT_SECRET || 'change-this-secret';
 
 export function generateToken(user: AuthenticatedUser): string {
-  return jwt.sign(user, JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '8h',
-  });
+  const expiresIn = process.env.JWT_EXPIRES_IN || '8h';
+  return jwt.sign(user, JWT_SECRET, { expiresIn } as jwt.SignOptions);
 }
 
 export function verifyToken(token: string): AuthenticatedUser | null {
