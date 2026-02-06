@@ -48,7 +48,34 @@ async function fetchWithAuth<T>(
     return { data, error: null };
   } catch (error) {
     console.error('API error:', error);
-    return { data: null, error: 'Netzwerkfehler - Server nicht erreichbar' };
+
+    // Heuristiken für typische Ursachen
+    if (typeof window !== 'undefined') {
+      const pageIsHttps = window.location.protocol === 'https:';
+      const apiIsHttp = API_BASE_URL.startsWith('http://');
+      if (pageIsHttps && apiIsHttp) {
+        return {
+          data: null,
+          error:
+            'Netzwerkfehler: Diese Seite läuft über HTTPS, aber das Backend ist HTTP (Mixed Content). Nutze HTTPS fürs Backend oder rufe das Frontend per HTTP auf.',
+        };
+      }
+
+      const apiIsLocalhost = /localhost|127\.0\.0\.1/i.test(API_BASE_URL);
+      const pageIsLocalhost = /localhost|127\.0\.0\.1/i.test(window.location.hostname);
+      if (apiIsLocalhost && !pageIsLocalhost) {
+        return {
+          data: null,
+          error:
+            'Netzwerkfehler: Backend-URL ist localhost, aber du öffnest das Frontend nicht auf localhost. Nutze die Server-IP/Domain in VITE_API_URL.',
+        };
+      }
+    }
+
+    return {
+      data: null,
+      error: 'Netzwerkfehler - Server nicht erreichbar (prüfe Port/FW, CORS_ORIGIN und URL)',
+    };
   }
 }
 

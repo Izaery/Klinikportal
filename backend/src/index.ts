@@ -13,10 +13,29 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
-  credentials: true,
-}));
+const corsOriginsRaw = process.env.CORS_ORIGIN || 'http://localhost:5173';
+const corsOrigins = corsOriginsRaw
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+const allowAnyOrigin = corsOrigins.includes('*');
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // origin ist z.B. bei curl/health-checks manchmal undefined
+      if (!origin) return callback(null, true);
+      if (allowAnyOrigin) return callback(null, true);
+      if (corsOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error(`CORS blockiert Origin: ${origin}`));
+    },
+    credentials: !allowAnyOrigin,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
+
 app.use(express.json());
 
 // Logging-Middleware
@@ -26,7 +45,7 @@ app.use((req, res, next) => {
 });
 
 // Health-Check
-app.get('/health', (req, res) => {
+app.get(['/health', '/api/health'], (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
