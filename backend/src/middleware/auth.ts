@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions, Secret } from 'jsonwebtoken';
 
 export interface AuthenticatedUser {
   id: string;
@@ -15,8 +15,11 @@ export interface AuthenticatedRequest extends Request {
 const JWT_SECRET = process.env.JWT_SECRET || 'change-this-secret';
 
 export function generateToken(user: AuthenticatedUser): string {
-  const expiresIn = process.env.JWT_EXPIRES_IN || '8h';
-  return jwt.sign(user, JWT_SECRET, { expiresIn } as jwt.SignOptions);
+  const secret: Secret = JWT_SECRET;
+  const expiresIn: SignOptions["expiresIn"] =
+    (process.env.JWT_EXPIRES_IN as SignOptions["expiresIn"]) ?? '8h';
+
+  return jwt.sign(user, secret, { expiresIn });
 }
 
 export function verifyToken(token: string): AuthenticatedUser | null {
