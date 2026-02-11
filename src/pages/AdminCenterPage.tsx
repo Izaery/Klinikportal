@@ -1,9 +1,38 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Component, ErrorInfo, ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { UserPlus, Edit, Trash2, Eye, EyeOff, Shield, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { User, UserRole, ROLE_LABELS } from '@/types';
 import { usersApi } from '@/lib/api-client';
+
+// Error Boundary to catch render errors
+class AdminErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('AdminCenterPage crashed:', error, info.componentStack);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: 32, color: 'red' }}>
+          <h2>Fehler in der Benutzerverwaltung</h2>
+          <pre style={{ whiteSpace: 'pre-wrap', marginTop: 16 }}>
+            {this.state.error?.message}
+            {'\n\n'}
+            {this.state.error?.stack}
+          </pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -54,7 +83,9 @@ const AdminCenterPage: React.FC = () => {
   const loadUsers = useCallback(async () => {
     setIsLoading(true);
     try {
+      console.log('[AdminCenter] Loading users...');
       const { data, error } = await usersApi.getAll();
+      console.log('[AdminCenter] API response:', { data, error });
       if (error) {
         toast.error('Fehler beim Laden der Benutzer: ' + error);
         return;
@@ -406,3 +437,10 @@ const AdminCenterPage: React.FC = () => {
 };
 
 export default AdminCenterPage;
+
+// Wrapped export with error boundary
+export const AdminCenterPageWithBoundary: React.FC = () => (
+  <AdminErrorBoundary>
+    <AdminCenterPage />
+  </AdminErrorBoundary>
+);
