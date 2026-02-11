@@ -75,17 +75,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Initialize auth state from stored token
   useEffect(() => {
     const initAuth = async () => {
-      const token = getAuthToken();
-      if (token) {
-        const userData = await fetchUserData();
-        if (userData) {
-          setUser(userData);
-        } else {
-          // Token invalid, clear it
-          setAuthToken(null);
+      try {
+        const token = getAuthToken();
+        if (token) {
+          const userData = await fetchUserData();
+          if (userData) {
+            setUser(userData);
+          } else {
+            // Token invalid, clear it
+            setAuthToken(null);
+          }
         }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        setAuthToken(null);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     initAuth();
