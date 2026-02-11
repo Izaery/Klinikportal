@@ -130,11 +130,6 @@ const LoginPage: React.FC = () => {
 
           {connectionHints.show && (
             <div className="mt-3 text-xs text-muted-foreground space-y-2">
-              <p>
-                Backend:&nbsp;
-                <code className="px-1 py-0.5 rounded bg-muted border border-border">{API_BASE_URL}</code>
-              </p>
-
               {connectionHints.isLovablePreview && connectionHints.isLocalBackend && (
                 <p>
                   Hinweis: In der Vorschau hier kann <code>localhost</code> nicht erreicht werden. Bitte teste das Frontend
