@@ -60,7 +60,7 @@ import {
 
 const ALL_ROLES: UserRole[] = [
   'ADMIN', 'MANAGER', 'INTAKE', 'VOLL_VIEW', 
-  'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d',
+  'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d', 'arzt_allgemein',
   'pflege_a', 'pflege_b', 'pflege_c', 'pflege_d'
 ];
 

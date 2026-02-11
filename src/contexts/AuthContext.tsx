@@ -35,7 +35,7 @@ export const PFLEGE_ROLES: Record<Station, UserRole> = {
 const mapDbRoleToUserRole = (dbRole: string): UserRole | null => {
   const validRoles: UserRole[] = [
     'ADMIN', 'MANAGER', 'INTAKE', 'VOLL_VIEW',
-    'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d',
+    'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d', 'arzt_allgemein',
     'pflege_a', 'pflege_b', 'pflege_c', 'pflege_d'
   ];
   return validRoles.includes(dbRole as UserRole) ? (dbRole as UserRole) : null;
@@ -148,7 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Check if user has only read-only roles (Pflege)
   const isReadOnly = useCallback((): boolean => {
     if (!user) return true;
-    const editingRoles: UserRole[] = ['ADMIN', 'MANAGER', 'INTAKE', 'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d'];
+    const editingRoles: UserRole[] = ['ADMIN', 'MANAGER', 'INTAKE', 'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d', 'arzt_allgemein'];
     return !editingRoles.some(role => user.roles.includes(role));
   }, [user]);
 
@@ -168,7 +168,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const canAssignStation = useCallback((): boolean => {
     if (isReadOnly()) return false;
-    return hasAnyRole(['ADMIN', 'MANAGER', 'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d']);
+    return hasAnyRole(['ADMIN', 'MANAGER', 'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d', 'arzt_allgemein']);
   }, [hasAnyRole, isReadOnly]);
 
   const canViewStation = useCallback((station: Station): boolean => {
