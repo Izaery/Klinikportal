@@ -120,12 +120,17 @@ const AdminCenterPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    console.log('[AdminCenter] canAccessAdminCenter:', canAccessAdminCenter());
     if (canAccessAdminCenter()) {
       loadUsers();
     }
   }, [canAccessAdminCenter, loadUsers]);
 
-  if (!canAccessAdminCenter()) {
+  const hasAccess = canAccessAdminCenter();
+  console.log('[AdminCenter] Render - hasAccess:', hasAccess, 'isLoading:', isLoading, 'users:', users.length);
+
+  if (!hasAccess) {
+    console.log('[AdminCenter] No access, redirecting to dashboard');
     return <Navigate to="/dashboard" replace />;
   }
 
