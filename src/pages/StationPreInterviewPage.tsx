@@ -50,7 +50,7 @@ const StationPreInterviewPage: React.FC = () => {
   const patients = getStationPreInterviewPatients(stationKey);
 
   // Ärzte und Manager können Aufnahme durchführen
-  const canAdmit = hasAnyRole(['ADMIN', 'MANAGER', 'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d']);
+  const canAdmit = hasAnyRole(['ADMIN', 'MANAGER', 'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d', 'arzt_allgemein']);
 
   const columns = [
     { key: 'lastName' as const, label: 'Nachname', sortable: true },
