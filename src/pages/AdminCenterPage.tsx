@@ -60,13 +60,25 @@ const AdminCenterPage: React.FC = () => {
         return;
       }
       if (data) {
-        const mapped: User[] = data.map((u: any) => ({
-          id: u.id,
-          username: u.username,
-          displayName: u.display_name,
-          roles: u.roles || [],
-          createdAt: u.created_at,
-        }));
+        const userList = Array.isArray(data) ? data : [];
+        const mapped: User[] = userList.map((u: any) => {
+          // pg driver may return roles as string "{ADMIN,MANAGER}" instead of array
+          let roles: string[] = [];
+          if (Array.isArray(u.roles)) {
+            roles = u.roles;
+          } else if (typeof u.roles === 'string') {
+            // Parse PostgreSQL array notation "{ADMIN,MANAGER}"
+            const cleaned = u.roles.replace(/^\{|\}$/g, '');
+            roles = cleaned ? cleaned.split(',') : [];
+          }
+          return {
+            id: u.id,
+            username: u.username,
+            displayName: u.display_name || u.displayName || u.username || 'Unbekannt',
+            roles: roles as UserRole[],
+            createdAt: u.created_at || u.createdAt || new Date().toISOString(),
+          };
+        });
         setUsers(mapped);
       }
     } catch {
