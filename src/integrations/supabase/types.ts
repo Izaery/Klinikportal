@@ -206,6 +206,7 @@ export type Database = {
         | "pflege_b"
         | "pflege_c"
         | "pflege_d"
+        | "arzt_allgemein"
       gender: "m" | "w" | "d"
       station: "A" | "B" | "C" | "D"
       urgency: "elektiv" | "dringend"
@@ -351,6 +352,7 @@ export const Constants = {
         "pflege_b",
         "pflege_c",
         "pflege_d",
+        "arzt_allgemein",
       ],
       gender: ["m", "w", "d"],
       station: ["A", "B", "C", "D"],
