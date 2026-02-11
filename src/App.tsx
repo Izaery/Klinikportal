@@ -17,7 +17,7 @@ import VollstationPage from "./pages/VollstationPage";
 import TeilstationOpenPage from "./pages/TeilstationOpenPage";
 import StationPreInterviewPage from "./pages/StationPreInterviewPage";
 import StationWaitingListPage from "./pages/StationWaitingListPage";
-import AdminCenterPage from "./pages/AdminCenterPage";
+import { AdminCenterPageWithBoundary } from "./pages/AdminCenterPage";
 import ArchivePage from "./pages/ArchivePage";
 import NotFound from "./pages/NotFound";
 
@@ -45,7 +45,7 @@ const App = () => (
                 <Route path="/teilstation/open" element={<TeilstationOpenPage />} />
                 <Route path="/station/:station/vorgespraech" element={<StationPreInterviewPage />} />
                 <Route path="/station/:station/warteliste" element={<StationWaitingListPage />} />
-                <Route path="/admin" element={<AdminCenterPage />} />
+                <Route path="/admin" element={<AdminCenterPageWithBoundary />} />
                 <Route path="/admin/archive" element={<ArchivePage />} />
               </Route>
 
