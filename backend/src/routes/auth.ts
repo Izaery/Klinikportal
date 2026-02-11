@@ -17,34 +17,44 @@ router.post('/login', async (req: Request, res: Response) => {
     // Email-Format wie im Frontend: username@clinic.local
     const email = `${username.toLowerCase()}@clinic.local`;
 
-    // Die DB-Funktion authenticate_user nutzen – sie prüft Passwort mit pgcrypto
-    const authResult = await pool.query(
-      `SELECT * FROM public.authenticate_user($1, $2)`,
+    // Direkt mit crypt() prüfen (pgcrypto)
+    const userResult = await pool.query(
+      `SELECT u.id, u.email, p.username, p.display_name
+       FROM public.users u
+       JOIN public.profiles p ON p.user_id = u.id
+       WHERE u.email = $1 
+         AND u.password_hash = crypt($2, u.password_hash)`,
       [email, password]
     );
 
-    if (authResult.rows.length === 0 || !authResult.rows[0].user_id) {
+    if (userResult.rows.length === 0) {
       console.log('Login fehlgeschlagen für:', email);
       return res.status(401).json({ error: 'Ungültiger Benutzername oder Passwort' });
     }
 
-    const row = authResult.rows[0];
-    const roles = row.roles || [];
+    const user = userResult.rows[0];
+
+    // Rollen abrufen
+    const rolesResult = await pool.query(
+      `SELECT role FROM public.user_roles WHERE user_id = $1`,
+      [user.id]
+    );
+    const roles = rolesResult.rows.map((r: any) => r.role);
 
     // JWT erstellen
     const token = generateToken({
-      id: row.user_id,
-      username: row.username,
-      displayName: row.display_name,
+      id: user.id,
+      username: user.username,
+      displayName: user.display_name,
       roles,
     });
 
     res.json({
       token,
       user: {
-        id: row.user_id,
-        username: row.username,
-        displayName: row.display_name,
+        id: user.id,
+        username: user.username,
+        displayName: user.display_name,
         roles,
       },
     });
