@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
-import { UserPlus, Edit, Trash2, Eye, EyeOff, Shield } from 'lucide-react';
- import { useAuth } from '@/contexts/AuthContext';
+import { UserPlus, Edit, Trash2, Eye, EyeOff, Shield, RefreshCw } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { User, UserRole, ROLE_LABELS } from '@/types';
+import { usersApi } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,20 +29,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-// Mock users state
-const INITIAL_USERS: User[] = [
-  { id: '1', username: 'admin', displayName: 'Dr. Admin', roles: ['ADMIN'], createdAt: '2024-01-01T00:00:00Z' },
-  { id: '2', username: 'manager', displayName: 'Fr. Manager', roles: ['MANAGER'], createdAt: '2024-01-02T00:00:00Z' },
-  { id: '3', username: 'aufnahme', displayName: 'Hr. Aufnahme', roles: ['INTAKE'], createdAt: '2024-01-03T00:00:00Z' },
-  { id: '4', username: 'arzt_a', displayName: 'Dr. Schmidt (A)', roles: ['arzt_a'], createdAt: '2024-01-04T00:00:00Z' },
-  { id: '5', username: 'arzt_b', displayName: 'Dr. Müller (B)', roles: ['arzt_b'], createdAt: '2024-01-05T00:00:00Z' },
-  { id: '6', username: 'voll_view', displayName: 'Fr. Vollansicht', roles: ['VOLL_VIEW'], createdAt: '2024-01-06T00:00:00Z' },
-  { id: '7', username: 'pflege_a', displayName: 'Sr. Krause (A)', roles: ['pflege_a'], createdAt: '2024-01-07T00:00:00Z' },
-  { id: '8', username: 'pflege_b', displayName: 'Sr. Fischer (B)', roles: ['pflege_b'], createdAt: '2024-01-08T00:00:00Z' },
-  { id: '9', username: 'pflege_c', displayName: 'Sr. Weber (C)', roles: ['pflege_c'], createdAt: '2024-01-09T00:00:00Z' },
-  { id: '10', username: 'pflege_d', displayName: 'Sr. Becker (D)', roles: ['pflege_d'], createdAt: '2024-01-10T00:00:00Z' },
-];
-
 const ALL_ROLES: UserRole[] = [
   'ADMIN', 'MANAGER', 'INTAKE', 'VOLL_VIEW', 
   'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d',
@@ -50,10 +37,12 @@ const ALL_ROLES: UserRole[] = [
 
 const AdminCenterPage: React.FC = () => {
   const { canAccessAdminCenter } = useAuth();
-  const [users, setUsers] = useState<User[]>(INITIAL_USERS);
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Form state
   const [formUsername, setFormUsername] = useState('');
@@ -61,6 +50,37 @@ const AdminCenterPage: React.FC = () => {
   const [formDisplayName, setFormDisplayName] = useState('');
   const [formRoles, setFormRoles] = useState<UserRole[]>([]);
   const [showPassword, setShowPassword] = useState(false);
+
+  const loadUsers = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await usersApi.getAll();
+      if (error) {
+        toast.error('Fehler beim Laden der Benutzer: ' + error);
+        return;
+      }
+      if (data) {
+        const mapped: User[] = data.map((u: any) => ({
+          id: u.id,
+          username: u.username,
+          displayName: u.display_name,
+          roles: u.roles || [],
+          createdAt: u.created_at,
+        }));
+        setUsers(mapped);
+      }
+    } catch {
+      toast.error('Fehler beim Laden der Benutzer');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (canAccessAdminCenter()) {
+      loadUsers();
+    }
+  }, [canAccessAdminCenter, loadUsers]);
 
   if (!canAccessAdminCenter()) {
     return <Navigate to="/dashboard" replace />;
@@ -97,7 +117,7 @@ const AdminCenterPage: React.FC = () => {
     );
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formUsername.trim() || !formDisplayName.trim() || formRoles.length === 0) {
       toast.error('Bitte füllen Sie alle Pflichtfelder aus');
       return;
@@ -108,42 +128,66 @@ const AdminCenterPage: React.FC = () => {
       return;
     }
 
-    if (editingUser) {
-      // Update existing user
-      setUsers(prev => prev.map(u => {
-        if (u.id === editingUser.id) {
-          return {
-            ...u,
-            username: formUsername.trim(),
-            displayName: formDisplayName.trim(),
-            roles: formRoles,
-          };
+    setIsSaving(true);
+    try {
+      if (editingUser) {
+        // Update roles
+        const { error: rolesError } = await usersApi.updateRoles(editingUser.id, formRoles);
+        if (rolesError) {
+          toast.error('Fehler beim Aktualisieren der Rollen: ' + rolesError);
+          return;
         }
-        return u;
-      }));
-      toast.success(`Benutzer "${formDisplayName}" wurde aktualisiert`);
-    } else {
-      // Create new user
-      const newUser: User = {
-        id: Date.now().toString(),
-        username: formUsername.trim(),
-        displayName: formDisplayName.trim(),
-        roles: formRoles,
-        createdAt: new Date().toISOString(),
-      };
-      setUsers(prev => [...prev, newUser]);
-      toast.success(`Benutzer "${formDisplayName}" wurde erstellt`);
-    }
 
-    setIsCreateDialogOpen(false);
-    resetForm();
+        // Reset password if provided
+        if (formPassword.trim()) {
+          const { error: pwError } = await usersApi.resetPassword(editingUser.id, formPassword);
+          if (pwError) {
+            toast.error('Fehler beim Zurücksetzen des Passworts: ' + pwError);
+            return;
+          }
+        }
+
+        toast.success(`Benutzer "${formDisplayName}" wurde aktualisiert`);
+      } else {
+        // Create new user
+        const { error } = await usersApi.create({
+          username: formUsername.trim(),
+          password: formPassword.trim(),
+          displayName: formDisplayName.trim(),
+          roles: formRoles,
+        });
+
+        if (error) {
+          toast.error('Fehler beim Erstellen: ' + error);
+          return;
+        }
+
+        toast.success(`Benutzer "${formDisplayName}" wurde erstellt`);
+      }
+
+      setIsCreateDialogOpen(false);
+      resetForm();
+      await loadUsers();
+    } catch {
+      toast.error('Ein unerwarteter Fehler ist aufgetreten');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleDelete = () => {
-    if (userToDelete) {
-      setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
+  const handleDelete = async () => {
+    if (!userToDelete) return;
+    try {
+      const { error } = await usersApi.delete(userToDelete.id);
+      if (error) {
+        toast.error('Fehler beim Löschen: ' + error);
+        return;
+      }
       toast.success(`Benutzer "${userToDelete.displayName}" wurde gelöscht`);
       setUserToDelete(null);
+      await loadUsers();
+    } catch {
+      toast.error('Ein unerwarteter Fehler ist aufgetreten');
     }
   };
 
@@ -161,63 +205,80 @@ const AdminCenterPage: React.FC = () => {
           </h1>
           <p className="text-muted-foreground mt-1">Benutzerverwaltung</p>
         </div>
-        <Button onClick={openCreateDialog}>
-          <UserPlus className="mr-2 h-4 w-4" />
-          Neuer Benutzer
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={loadUsers} disabled={isLoading}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Aktualisieren
+          </Button>
+          <Button onClick={openCreateDialog}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Neuer Benutzer
+          </Button>
+        </div>
       </div>
 
       {/* Users Table */}
       <div className="clinic-card">
         <div className="overflow-x-auto">
-          <table className="clinic-table">
-            <thead>
-              <tr>
-                <th>Benutzername</th>
-                <th>Anzeigename</th>
-                <th>Rollen</th>
-                <th>Erstellt</th>
-                <th className="w-24">Aktionen</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map(user => (
-                <tr key={user.id}>
-                  <td className="font-mono text-sm">{user.username}</td>
-                  <td className="font-medium">{user.displayName}</td>
-                  <td>
-                    <div className="flex flex-wrap gap-1">
-                      {user.roles.map(role => (
-                        <Badge key={role} variant="secondary" className="text-xs">
-                          {ROLE_LABELS[role]}
-                        </Badge>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="text-muted-foreground">{formatDate(user.createdAt)}</td>
-                  <td>
-                    <div className="flex gap-2">
-                      <Button 
-                        size="icon" 
-                        variant="ghost"
-                        onClick={() => openEditDialog(user)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        size="icon" 
-                        variant="ghost"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => setUserToDelete(user)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </td>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12 text-muted-foreground">
+              <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+              Lade Benutzer...
+            </div>
+          ) : users.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              Keine Benutzer gefunden
+            </div>
+          ) : (
+            <table className="clinic-table">
+              <thead>
+                <tr>
+                  <th>Benutzername</th>
+                  <th>Anzeigename</th>
+                  <th>Rollen</th>
+                  <th>Erstellt</th>
+                  <th className="w-24">Aktionen</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {users.map(user => (
+                  <tr key={user.id}>
+                    <td className="font-mono text-sm">{user.username}</td>
+                    <td className="font-medium">{user.displayName}</td>
+                    <td>
+                      <div className="flex flex-wrap gap-1">
+                        {user.roles.map(role => (
+                          <Badge key={role} variant="secondary" className="text-xs">
+                            {ROLE_LABELS[role]}
+                          </Badge>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="text-muted-foreground">{formatDate(user.createdAt)}</td>
+                    <td>
+                      <div className="flex gap-2">
+                        <Button 
+                          size="icon" 
+                          variant="ghost"
+                          onClick={() => openEditDialog(user)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => setUserToDelete(user)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 
@@ -243,6 +304,7 @@ const AdminCenterPage: React.FC = () => {
                 value={formUsername}
                 onChange={(e) => setFormUsername(e.target.value)}
                 placeholder="z.B. mueller_a"
+                disabled={!!editingUser}
               />
             </div>
 
@@ -302,8 +364,8 @@ const AdminCenterPage: React.FC = () => {
             <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
               Abbrechen
             </Button>
-            <Button onClick={handleSave}>
-              {editingUser ? 'Speichern' : 'Erstellen'}
+            <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving ? 'Speichern...' : editingUser ? 'Speichern' : 'Erstellen'}
             </Button>
           </DialogFooter>
         </DialogContent>
