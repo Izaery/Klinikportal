@@ -17,65 +17,34 @@ router.post('/login', async (req: Request, res: Response) => {
     // Email-Format wie im Frontend: username@clinic.local
     const email = `${username.toLowerCase()}@clinic.local`;
 
-    // Benutzer suchen
-    const userResult = await pool.query(
-      `SELECT u.id, u.password_hash, p.username, p.display_name
-       FROM public.users u
-       JOIN public.profiles p ON p.user_id = u.id
-       WHERE u.email = $1 AND u.email_confirmed = true`,
-      [email]
+    // Die DB-Funktion authenticate_user nutzen – sie prüft Passwort mit pgcrypto
+    const authResult = await pool.query(
+      `SELECT * FROM public.authenticate_user($1, $2)`,
+      [email, password]
     );
 
-    if (userResult.rows.length === 0) {
+    if (authResult.rows.length === 0 || !authResult.rows[0].user_id) {
+      console.log('Login fehlgeschlagen für:', email);
       return res.status(401).json({ error: 'Ungültiger Benutzername oder Passwort' });
     }
 
-    const user = userResult.rows[0];
-
-    // Passwort prüfen (bcrypt mit pgcrypto-Format)
-    // pgcrypto verwendet Blowfish, bcrypt kann das verifizieren
-    const passwordValid = await bcrypt.compare(password, user.password_hash);
-
-    if (!passwordValid) {
-      // Alternative: Wenn pgcrypto verwendet wird, prüfen wir mit SQL
-      const authResult = await pool.query(
-        `SELECT id FROM public.users 
-         WHERE email = $1 AND password_hash = crypt($2, password_hash)`,
-        [email, password]
-      );
-      
-      if (authResult.rows.length === 0) {
-        return res.status(401).json({ error: 'Ungültiger Benutzername oder Passwort' });
-      }
-    }
-
-    // Rollen abrufen
-    const rolesResult = await pool.query(
-      `SELECT role FROM public.user_roles WHERE user_id = $1`,
-      [user.id]
-    );
-    const roles = rolesResult.rows.map((r) => r.role);
-
-    // Last sign in aktualisieren
-    await pool.query(
-      `UPDATE public.users SET last_sign_in_at = now() WHERE id = $1`,
-      [user.id]
-    );
+    const row = authResult.rows[0];
+    const roles = row.roles || [];
 
     // JWT erstellen
     const token = generateToken({
-      id: user.id,
-      username: user.username,
-      displayName: user.display_name,
+      id: row.user_id,
+      username: row.username,
+      displayName: row.display_name,
       roles,
     });
 
     res.json({
       token,
       user: {
-        id: user.id,
-        username: user.username,
-        displayName: user.display_name,
+        id: row.user_id,
+        username: row.username,
+        displayName: row.display_name,
         roles,
       },
     });
