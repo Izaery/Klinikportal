@@ -21,7 +21,7 @@ CREATE TYPE station AS ENUM ('A', 'B', 'C', 'D');
 CREATE TYPE voll_station AS ENUM ('E', 'F', 'G');
 CREATE TYPE app_role AS ENUM (
   'ADMIN', 'MANAGER', 'INTAKE', 'VOLL_VIEW',
-  'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d',
+  'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d', 'arzt_allgemein',
   'pflege_a', 'pflege_b', 'pflege_c', 'pflege_d'
 );
 
@@ -351,7 +351,7 @@ CREATE POLICY "Authorized users can create patients"
   WITH CHECK (
     has_any_role(current_user_id(), ARRAY[
       'ADMIN', 'MANAGER', 'INTAKE',
-      'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d'
+      'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d', 'arzt_allgemein'
     ]::app_role[])
   );
 
@@ -360,7 +360,7 @@ CREATE POLICY "Authorized users can update patients"
   USING (
     has_any_role(current_user_id(), ARRAY[
       'ADMIN', 'MANAGER', 'INTAKE',
-      'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d'
+      'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d', 'arzt_allgemein'
     ]::app_role[])
   );
 
