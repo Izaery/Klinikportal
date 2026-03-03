@@ -13,6 +13,8 @@ interface PatientContextType {
   restorePatient: (id: string) => Promise<boolean>;
   assignStation: (id: string, station: Station) => Promise<boolean>;
   moveToWaitingList: (id: string, admissionDate?: string) => Promise<boolean>;
+  moveBackToAnfrageliste: (id: string) => Promise<boolean>;
+  confirmPreInterview: (id: string) => Promise<boolean>;
   getVollstationPatients: () => Patient[];
   getTeilstationPatients: () => Patient[];
   getOpenTeilstationPatients: () => Patient[];
@@ -45,6 +47,7 @@ const mapDbToPatient = (row: any): Patient => ({
   relevantConditions: row.relevant_conditions,
   relevantConditionsDetails: row.relevant_conditions_details || undefined,
   notes: row.notes || undefined,
+  auftrag: row.auftrag || undefined,
   admissionType: row.admission_type,
   urgency: row.urgency || undefined,
   station: row.station || undefined,
@@ -82,6 +85,7 @@ const mapPatientToDb = (patient: Partial<Patient>): Record<string, any> => {
   if (patient.relevantConditions !== undefined) dbData.relevant_conditions = patient.relevantConditions;
   if (patient.relevantConditionsDetails !== undefined) dbData.relevant_conditions_details = patient.relevantConditionsDetails || null;
   if (patient.notes !== undefined) dbData.notes = patient.notes || null;
+  if (patient.auftrag !== undefined) dbData.auftrag = patient.auftrag || null;
   if (patient.admissionType !== undefined) dbData.admission_type = patient.admissionType;
   if (patient.urgency !== undefined) dbData.urgency = patient.urgency || null;
   if (patient.station !== undefined) dbData.station = patient.station || null;

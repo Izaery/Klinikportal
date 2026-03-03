@@ -19,6 +19,7 @@ export type Database = {
           admission_date: string | null
           admission_type: Database["public"]["Enums"]["admission_type"]
           archived: boolean
+          auftrag: string | null
           birth_date: string
           case_number: string | null
           catchment_area: boolean
@@ -53,6 +54,7 @@ export type Database = {
           admission_date?: string | null
           admission_type: Database["public"]["Enums"]["admission_type"]
           archived?: boolean
+          auftrag?: string | null
           birth_date: string
           case_number?: string | null
           catchment_area?: boolean
@@ -87,6 +89,7 @@ export type Database = {
           admission_date?: string | null
           admission_type?: Database["public"]["Enums"]["admission_type"]
           archived?: boolean
+          auftrag?: string | null
           birth_date?: string
           case_number?: string | null
           catchment_area?: boolean
