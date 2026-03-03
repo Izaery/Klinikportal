@@ -50,6 +50,7 @@ export interface Patient {
   relevantConditions: boolean; // Relevante Erkrankungen/Behinderungen
   relevantConditionsDetails?: string;
   notes?: string; // Anmerkungen
+  auftrag?: string; // Auftrag - Pflicht bei Teilstation
   
   // Aufnahme
   admissionType: AdmissionType;
