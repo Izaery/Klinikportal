@@ -64,15 +64,16 @@ router.post('/', async (req: AuthenticatedRequest, res: Response) => {
           first_name, last_name, birth_date, gender, case_number,
           phone, email, catchment_area, diagnosis, external_referral,
           substance_abuse, substance_abuse_details, relevant_conditions,
-          relevant_conditions_details, notes, admission_type, urgency,
+          relevant_conditions_details, notes, auftrag, admission_type, urgency,
           station, on_waiting_list, voll_station, secondary_station,
-          monday_call, pre_interview_date, admission_date,
+          monday_call, pre_interview_date, pre_interview_confirmed, admission_date,
+          move_back_reason,
           created_by, created_by_display_name,
           last_modified_by, last_modified_by_display_name
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
           $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-          $21, $22, $23, $24, $25, $26, $27, $28
+          $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31
         ) RETURNING *`,
         [
           data.first_name,
@@ -90,6 +91,7 @@ router.post('/', async (req: AuthenticatedRequest, res: Response) => {
           data.relevant_conditions || false,
           data.relevant_conditions_details || null,
           data.notes || null,
+          data.auftrag || null,
           data.admission_type,
           data.urgency || null,
           data.station || null,
@@ -98,7 +100,9 @@ router.post('/', async (req: AuthenticatedRequest, res: Response) => {
           data.secondary_station || null,
           data.monday_call || false,
           data.pre_interview_date || null,
+          data.pre_interview_confirmed || false,
           data.admission_date || null,
+          data.move_back_reason || null,
           userId,
           displayName,
           userId,
@@ -155,6 +159,9 @@ router.patch('/:id', async (req: AuthenticatedRequest, res: Response) => {
       pre_interview_date: 'pre_interview_date',
       admission_date: 'admission_date',
       archived: 'archived',
+      auftrag: 'auftrag',
+      pre_interview_confirmed: 'pre_interview_confirmed',
+      move_back_reason: 'move_back_reason',
     };
 
     for (const [key, dbField] of Object.entries(fieldMap)) {
