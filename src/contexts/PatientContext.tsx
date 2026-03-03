@@ -52,6 +52,7 @@ const mapDbToPatient = (row: any): Patient => ({
   urgency: row.urgency || undefined,
   station: row.station || undefined,
   onWaitingList: row.on_waiting_list || false,
+  preInterviewConfirmed: row.pre_interview_confirmed || false,
   vollStation: row.voll_station || undefined,
   secondaryStation: row.secondary_station || undefined,
   mondayCall: row.monday_call || false,
@@ -90,6 +91,7 @@ const mapPatientToDb = (patient: Partial<Patient>): Record<string, any> => {
   if (patient.urgency !== undefined) dbData.urgency = patient.urgency || null;
   if (patient.station !== undefined) dbData.station = patient.station || null;
   if (patient.onWaitingList !== undefined) dbData.on_waiting_list = patient.onWaitingList;
+  if (patient.preInterviewConfirmed !== undefined) dbData.pre_interview_confirmed = patient.preInterviewConfirmed;
   if (patient.vollStation !== undefined) dbData.voll_station = patient.vollStation || null;
   if (patient.secondaryStation !== undefined) dbData.secondary_station = patient.secondaryStation || null;
   if (patient.mondayCall !== undefined) dbData.monday_call = patient.mondayCall;
@@ -135,7 +137,6 @@ export const PatientProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, [isAuthenticated, toast]);
 
-  // Initial fetch
   useEffect(() => {
     fetchPatients();
   }, [fetchPatients]);
@@ -240,6 +241,32 @@ export const PatientProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return updatePatient(id, updates);
   }, [updatePatient]);
 
+  const moveBackToAnfrageliste = useCallback(async (id: string): Promise<boolean> => {
+    if (!user) return false;
+    try {
+      const { data, error } = await patientsApi.update(id, {
+        station: null,
+        on_waiting_list: false,
+        pre_interview_date: null,
+        pre_interview_confirmed: false,
+        admission_date: null,
+      });
+      if (error || !data) {
+        toast({ title: 'Fehler', description: 'Patient konnte nicht zurückgesetzt werden.', variant: 'destructive' });
+        return false;
+      }
+      const updatedPatient = mapDbToPatient(data);
+      setPatients(prev => prev.map(p => p.id === id ? updatedPatient : p));
+      return true;
+    } catch {
+      return false;
+    }
+  }, [user, toast]);
+
+  const confirmPreInterview = useCallback(async (id: string): Promise<boolean> => {
+    return updatePatient(id, { preInterviewConfirmed: true } as Partial<Patient>);
+  }, [updatePatient]);
+
   const getVollstationPatients = useCallback((): Patient[] => {
     return patients.filter(p => !p.archived && p.admissionType === 'VOLLSTATION');
   }, [patients]);
@@ -290,6 +317,8 @@ export const PatientProvider: React.FC<{ children: React.ReactNode }> = ({ child
         restorePatient,
         assignStation,
         moveToWaitingList,
+        moveBackToAnfrageliste,
+        confirmPreInterview,
         getVollstationPatients,
         getTeilstationPatients,
         getOpenTeilstationPatients,

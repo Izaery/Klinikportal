@@ -28,11 +28,12 @@ import {
 
 const StationPreInterviewPage: React.FC = () => {
   const { station } = useParams<{ station: string }>();
-  const { canViewStation, canEditPatients, canDeletePatients, hasAnyRole } = useAuth();
-  const { getStationPreInterviewPatients, archivePatient, moveToWaitingList } = usePatients();
+  const { canViewStation, canEditPatients, canDeletePatients, hasAnyRole, hasRole } = useAuth();
+  const { getStationPreInterviewPatients, archivePatient, moveToWaitingList, moveBackToAnfrageliste, confirmPreInterview } = usePatients();
   const navigate = useNavigate();
   const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
   const [patientToAdmit, setPatientToAdmit] = useState<Patient | null>(null);
+  const [patientToMoveBack, setPatientToMoveBack] = useState<Patient | null>(null);
   const [admissionDate, setAdmissionDate] = useState<Date | undefined>(undefined);
 
   // Validate station parameter
@@ -51,6 +52,12 @@ const StationPreInterviewPage: React.FC = () => {
 
   // Ärzte und Manager können Aufnahme durchführen
   const canAdmit = hasAnyRole(['ADMIN', 'MANAGER', 'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d', 'arzt_allgemein']);
+  
+  // Zurück zur Anfrageliste: Ärzte, Admin, Manager
+  const canMoveBack = hasAnyRole(['ADMIN', 'MANAGER', 'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d', 'arzt_allgemein']);
+  
+  // Termin bestätigen: Ärzte, Admin, Manager, INTAKE
+  const canConfirm = hasAnyRole(['ADMIN', 'MANAGER', 'INTAKE', 'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d', 'arzt_allgemein']);
 
   const columns = [
     { key: 'lastName' as const, label: 'Nachname', sortable: true },
@@ -60,7 +67,9 @@ const StationPreInterviewPage: React.FC = () => {
     { key: 'diagnosis' as const, label: 'Diagnose', sortable: true },
     { key: 'urgency' as const, label: 'Dringlichkeit', sortable: true },
     { key: 'lastModifiedAt' as const, label: 'Geändert von', sortable: true },
+    ...(canConfirm ? [{ key: 'confirmAction' as const, label: 'Bestätigt', width: '120px' }] : []),
     ...(canAdmit ? [{ key: 'admissionAction' as const, label: 'Aufnahme', width: '120px' }] : []),
+    ...(canMoveBack ? [{ key: 'moveBackAction' as const, label: 'Zurück', width: '100px' }] : []),
     ...((canEditPatients() || canDeletePatients()) ? [{ key: 'actions' as const, label: 'Aktionen', width: '100px' }] : []),
   ];
 
@@ -77,6 +86,19 @@ const StationPreInterviewPage: React.FC = () => {
     setAdmissionDate(undefined);
   };
 
+  const handleMoveBack = (patient: Patient) => {
+    setPatientToMoveBack(patient);
+  };
+
+  const handleConfirmPreInterview = async (patient: Patient) => {
+    const success = await confirmPreInterview(patient.id);
+    if (success) {
+      toast.success(`Vorgesprächstermin für ${patient.lastName}, ${patient.firstName} bestätigt`);
+    } else {
+      toast.error('Fehler beim Bestätigen des Termins');
+    }
+  };
+
   const confirmDelete = () => {
     if (patientToDelete) {
       archivePatient(patientToDelete.id);
@@ -91,6 +113,18 @@ const StationPreInterviewPage: React.FC = () => {
       toast.success(`${patientToAdmit.lastName}, ${patientToAdmit.firstName} wurde auf die Warteliste verschoben`);
       setPatientToAdmit(null);
       setAdmissionDate(undefined);
+    }
+  };
+
+  const confirmMoveBack = async () => {
+    if (patientToMoveBack) {
+      const success = await moveBackToAnfrageliste(patientToMoveBack.id);
+      if (success) {
+        toast.success(`${patientToMoveBack.lastName}, ${patientToMoveBack.firstName} wurde auf die Anfrageliste zurückgesetzt`);
+      } else {
+        toast.error('Fehler beim Zurücksetzen');
+      }
+      setPatientToMoveBack(null);
     }
   };
 
@@ -111,9 +145,12 @@ const StationPreInterviewPage: React.FC = () => {
         onEdit={canEditPatients() ? handleEdit : undefined}
         onDelete={canDeletePatients() ? handleDelete : undefined}
         onAdmit={canAdmit ? handleAdmit : undefined}
+        onMoveBack={canMoveBack ? handleMoveBack : undefined}
+        onConfirmPreInterview={canConfirm ? handleConfirmPreInterview : undefined}
         emptyMessage={`Keine Patienten in der Vorgesprächsliste von ${STATION_LABELS[stationKey]}`}
       />
 
+      {/* Delete Dialog */}
       <AlertDialog open={!!patientToDelete} onOpenChange={() => setPatientToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -132,6 +169,7 @@ const StationPreInterviewPage: React.FC = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Admit Dialog */}
       <AlertDialog open={!!patientToAdmit} onOpenChange={() => {
         setPatientToAdmit(null);
         setAdmissionDate(undefined);
@@ -182,6 +220,25 @@ const StationPreInterviewPage: React.FC = () => {
             <AlertDialogCancel>Abbrechen</AlertDialogCancel>
             <AlertDialogAction onClick={confirmAdmit}>
               Auf Warteliste setzen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Move Back Dialog */}
+      <AlertDialog open={!!patientToMoveBack} onOpenChange={() => setPatientToMoveBack(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Zurück zur Anfrageliste?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Möchten Sie <strong>{patientToMoveBack?.lastName}, {patientToMoveBack?.firstName}</strong> zurück auf die Anfrageliste setzen? 
+              Die Stationszuweisung und der Vorgesprächstermin werden entfernt.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmMoveBack}>
+              Zurücksetzen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

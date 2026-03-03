@@ -8,7 +8,9 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
-  UserPlus
+  UserPlus,
+  Undo2,
+  CheckCircle2
 } from 'lucide-react';
 import { Patient, Station, VollStation, URGENCY_LABELS, STATION_LABELS, VOLL_STATION_LABELS, GENDER_LABELS } from '@/types';
 import { Input } from '@/components/ui/input';
@@ -34,6 +36,8 @@ interface PatientTableProps {
   onDelete?: (patient: Patient) => void;
   onAssignStation?: (patient: Patient, station: Station) => void;
   onAdmit?: (patient: Patient) => void;
+  onMoveBack?: (patient: Patient) => void;
+  onConfirmPreInterview?: (patient: Patient) => void;
   showStationAssign?: boolean;
   emptyMessage?: string;
 }
@@ -45,6 +49,8 @@ export const PatientTable: React.FC<PatientTableProps> = ({
   onDelete,
   onAssignStation,
   onAdmit,
+  onMoveBack,
+  onConfirmPreInterview,
   showStationAssign = false,
   emptyMessage = 'Keine Patienten gefunden',
 }) => {
@@ -255,7 +261,7 @@ export const PatientTable: React.FC<PatientTableProps> = ({
                         )}
                       </td>
                       {columns.map((col) => (
-                        <td key={col.key} onClick={(e) => col.key === 'actions' || col.key === 'stationAssign' ? e.stopPropagation() : undefined}>
+                        <td key={col.key} onClick={(e) => ['actions', 'stationAssign', 'admissionAction', 'moveBackAction', 'confirmAction'].includes(col.key) ? e.stopPropagation() : undefined}>
                           {col.key === 'lastName' && patient.lastName}
                           {col.key === 'firstName' && patient.firstName}
                           {col.key === 'mondayCall' && (
@@ -393,6 +399,39 @@ export const PatientTable: React.FC<PatientTableProps> = ({
                               Aufnahme
                             </Button>
                           )}
+                          {col.key === 'moveBackAction' && onMoveBack && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onMoveBack(patient);
+                              }}
+                            >
+                              <Undo2 className="h-4 w-4 mr-1" />
+                              Zurück
+                            </Button>
+                          )}
+                          {col.key === 'confirmAction' && onConfirmPreInterview && (
+                            <div onClick={(e) => e.stopPropagation()}>
+                              {patient.preInterviewConfirmed ? (
+                                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                              ) : (
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onConfirmPreInterview(patient);
+                                  }}
+                                >
+                                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                                  Bestätigen
+                                </Button>
+                              )}
+                            </div>
+                          )}
                           {col.key === 'actions' && (
                             <div className="flex gap-2">
                               {canEditPatients() && onEdit && (
@@ -492,6 +531,13 @@ export const PatientTable: React.FC<PatientTableProps> = ({
                               <div className="md:col-span-2">
                                 <h4 className="font-semibold mb-2 text-foreground">Anmerkungen</h4>
                                 <p className="text-muted-foreground">{patient.notes}</p>
+                              </div>
+                            )}
+
+                            {patient.auftrag && (
+                              <div className="md:col-span-2">
+                                <h4 className="font-semibold mb-2 text-foreground">Auftrag</h4>
+                                <p className="text-muted-foreground">{patient.auftrag}</p>
                               </div>
                             )}
                             

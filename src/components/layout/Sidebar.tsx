@@ -51,7 +51,7 @@ export const Sidebar: React.FC = () => {
   );
 
   const visibleStations = getVisibleStations();
-  const canSeeStationTabs = visibleStations.length > 0 && !hasAnyRole(['INTAKE']);
+  const canSeeStationTabs = visibleStations.length > 0 || hasAnyRole(['INTAKE']);
   const readOnly = isReadOnly();
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-sidebar border-r border-sidebar-border">

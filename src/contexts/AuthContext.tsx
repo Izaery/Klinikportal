@@ -178,7 +178,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [hasAnyRole, isReadOnly]);
 
   const canViewStation = useCallback((station: Station): boolean => {
-    if (hasAnyRole(['ADMIN', 'MANAGER'])) return true;
+    if (hasAnyRole(['ADMIN', 'MANAGER', 'INTAKE'])) return true;
     const stationRole = STATION_ROLES[station];
     const pflegeRole = PFLEGE_ROLES[station];
     return hasRole(stationRole) || hasRole(pflegeRole);
@@ -189,7 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [hasRole]);
 
   const getVisibleStations = useCallback((): Station[] => {
-    if (hasAnyRole(['ADMIN', 'MANAGER'])) {
+    if (hasAnyRole(['ADMIN', 'MANAGER', 'INTAKE', 'arzt_allgemein'])) {
       return ['A', 'B', 'C', 'D'];
     }
     const stations: Station[] = [];
