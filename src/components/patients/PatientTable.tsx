@@ -403,13 +403,14 @@ export const PatientTable: React.FC<PatientTableProps> = ({
                             <Button 
                               size="sm" 
                               variant="outline"
+                              className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onMoveBack(patient);
                               }}
                             >
                               <Undo2 className="h-4 w-4 mr-1" />
-                              Zurück
+                              Anfrageliste
                             </Button>
                           )}
                           {col.key === 'confirmAction' && onConfirmPreInterview && (
@@ -420,13 +421,11 @@ export const PatientTable: React.FC<PatientTableProps> = ({
                                 <Button 
                                   size="sm" 
                                   variant="outline"
-                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     onConfirmPreInterview(patient);
                                   }}
                                 >
-                                  <CheckCircle2 className="h-4 w-4 mr-1" />
                                   Bestätigen
                                 </Button>
                               )}
@@ -538,6 +537,13 @@ export const PatientTable: React.FC<PatientTableProps> = ({
                               <div className="md:col-span-2">
                                 <h4 className="font-semibold mb-2 text-foreground">Auftrag</h4>
                                 <p className="text-muted-foreground">{patient.auftrag}</p>
+                              </div>
+                            )}
+
+                            {patient.moveBackReason && (
+                              <div className="md:col-span-2 p-3 rounded-lg border border-orange-300 bg-orange-50 dark:bg-orange-950/30 dark:border-orange-800">
+                                <h4 className="font-semibold mb-2 text-orange-700 dark:text-orange-400">Rücksetzungsgrund</h4>
+                                <p className="text-orange-600 dark:text-orange-300">{patient.moveBackReason}</p>
                               </div>
                             )}
                             

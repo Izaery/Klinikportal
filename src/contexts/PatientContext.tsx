@@ -13,7 +13,7 @@ interface PatientContextType {
   restorePatient: (id: string) => Promise<boolean>;
   assignStation: (id: string, station: Station) => Promise<boolean>;
   moveToWaitingList: (id: string, admissionDate?: string) => Promise<boolean>;
-  moveBackToAnfrageliste: (id: string) => Promise<boolean>;
+  moveBackToAnfrageliste: (id: string, reason: string) => Promise<boolean>;
   confirmPreInterview: (id: string) => Promise<boolean>;
   getVollstationPatients: () => Patient[];
   getTeilstationPatients: () => Patient[];
@@ -48,6 +48,7 @@ const mapDbToPatient = (row: any): Patient => ({
   relevantConditionsDetails: row.relevant_conditions_details || undefined,
   notes: row.notes || undefined,
   auftrag: row.auftrag || undefined,
+  moveBackReason: row.move_back_reason || undefined,
   admissionType: row.admission_type,
   urgency: row.urgency || undefined,
   station: row.station || undefined,
@@ -87,6 +88,7 @@ const mapPatientToDb = (patient: Partial<Patient>): Record<string, any> => {
   if (patient.relevantConditionsDetails !== undefined) dbData.relevant_conditions_details = patient.relevantConditionsDetails || null;
   if (patient.notes !== undefined) dbData.notes = patient.notes || null;
   if (patient.auftrag !== undefined) dbData.auftrag = patient.auftrag || null;
+  if (patient.moveBackReason !== undefined) dbData.move_back_reason = patient.moveBackReason || null;
   if (patient.admissionType !== undefined) dbData.admission_type = patient.admissionType;
   if (patient.urgency !== undefined) dbData.urgency = patient.urgency || null;
   if (patient.station !== undefined) dbData.station = patient.station || null;
@@ -241,7 +243,7 @@ export const PatientProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return updatePatient(id, updates);
   }, [updatePatient]);
 
-  const moveBackToAnfrageliste = useCallback(async (id: string): Promise<boolean> => {
+  const moveBackToAnfrageliste = useCallback(async (id: string, reason: string): Promise<boolean> => {
     if (!user) return false;
     try {
       const { data, error } = await patientsApi.update(id, {
@@ -250,6 +252,7 @@ export const PatientProvider: React.FC<{ children: React.ReactNode }> = ({ child
         pre_interview_date: null,
         pre_interview_confirmed: false,
         admission_date: null,
+        move_back_reason: reason,
       });
       if (error || !data) {
         toast({ title: 'Fehler', description: 'Patient konnte nicht zurückgesetzt werden.', variant: 'destructive' });

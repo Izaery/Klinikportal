@@ -11,6 +11,7 @@ import { Patient, Station, STATION_LABELS } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -34,6 +35,7 @@ const StationPreInterviewPage: React.FC = () => {
   const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
   const [patientToAdmit, setPatientToAdmit] = useState<Patient | null>(null);
   const [patientToMoveBack, setPatientToMoveBack] = useState<Patient | null>(null);
+  const [moveBackReason, setMoveBackReason] = useState('');
   const [admissionDate, setAdmissionDate] = useState<Date | undefined>(undefined);
 
   // Validate station parameter
@@ -69,7 +71,7 @@ const StationPreInterviewPage: React.FC = () => {
     { key: 'lastModifiedAt' as const, label: 'Geändert von', sortable: true },
     ...(canConfirm ? [{ key: 'confirmAction' as const, label: 'Bestätigt', width: '120px' }] : []),
     ...(canAdmit ? [{ key: 'admissionAction' as const, label: 'Aufnahme', width: '120px' }] : []),
-    ...(canMoveBack ? [{ key: 'moveBackAction' as const, label: 'Zurück', width: '100px' }] : []),
+    ...(canMoveBack ? [{ key: 'moveBackAction' as const, label: 'Anfrageliste', width: '120px' }] : []),
     ...((canEditPatients() || canDeletePatients()) ? [{ key: 'actions' as const, label: 'Aktionen', width: '100px' }] : []),
   ];
 
@@ -88,6 +90,7 @@ const StationPreInterviewPage: React.FC = () => {
 
   const handleMoveBack = (patient: Patient) => {
     setPatientToMoveBack(patient);
+    setMoveBackReason('');
   };
 
   const handleConfirmPreInterview = async (patient: Patient) => {
@@ -117,14 +120,15 @@ const StationPreInterviewPage: React.FC = () => {
   };
 
   const confirmMoveBack = async () => {
-    if (patientToMoveBack) {
-      const success = await moveBackToAnfrageliste(patientToMoveBack.id);
+    if (patientToMoveBack && moveBackReason.trim()) {
+      const success = await moveBackToAnfrageliste(patientToMoveBack.id, moveBackReason.trim());
       if (success) {
         toast.success(`${patientToMoveBack.lastName}, ${patientToMoveBack.firstName} wurde auf die Anfrageliste zurückgesetzt`);
       } else {
         toast.error('Fehler beim Zurücksetzen');
       }
       setPatientToMoveBack(null);
+      setMoveBackReason('');
     }
   };
 
@@ -226,18 +230,41 @@ const StationPreInterviewPage: React.FC = () => {
       </AlertDialog>
 
       {/* Move Back Dialog */}
-      <AlertDialog open={!!patientToMoveBack} onOpenChange={() => setPatientToMoveBack(null)}>
+      <AlertDialog open={!!patientToMoveBack} onOpenChange={() => {
+        setPatientToMoveBack(null);
+        setMoveBackReason('');
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Zurück zur Anfrageliste?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Möchten Sie <strong>{patientToMoveBack?.lastName}, {patientToMoveBack?.firstName}</strong> zurück auf die Anfrageliste setzen? 
-              Die Stationszuweisung und der Vorgesprächstermin werden entfernt.
+            <AlertDialogTitle>Auf Anfrageliste zurücksetzen?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p>
+                  <strong>{patientToMoveBack?.lastName}, {patientToMoveBack?.firstName}</strong> wird zurück auf die Anfrageliste gesetzt. 
+                  Die Stationszuweisung und der Vorgesprächstermin werden entfernt.
+                </p>
+                <div className="space-y-2">
+                  <Label htmlFor="moveBackReason">Begründung *</Label>
+                  <Textarea
+                    id="moveBackReason"
+                    value={moveBackReason}
+                    onChange={(e) => setMoveBackReason(e.target.value)}
+                    placeholder="Grund für die Rücksetzung auf die Anfrageliste..."
+                    className={!moveBackReason.trim() ? 'border-destructive' : ''}
+                  />
+                  {!moveBackReason.trim() && (
+                    <p className="text-sm text-destructive">Begründung ist ein Pflichtfeld</p>
+                  )}
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmMoveBack}>
+            <AlertDialogAction 
+              onClick={confirmMoveBack}
+              disabled={!moveBackReason.trim()}
+            >
               Zurücksetzen
             </AlertDialogAction>
           </AlertDialogFooter>

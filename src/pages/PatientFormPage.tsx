@@ -656,7 +656,7 @@ const PatientFormPage: React.FC = () => {
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Bei Teilstation erfolgt die Stationszuweisung später über die Anfrageliste durch Ärzte oder Manager.
+                    Bei Teilstation erfolgt die Stationszuweisung später über die Anfrageliste.
                   </AlertDescription>
                 </Alert>
               </>
