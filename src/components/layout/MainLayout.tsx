@@ -4,7 +4,11 @@ import { Sidebar } from './Sidebar';
  import { useAuth } from '@/contexts/AuthContext';
 
 export const MainLayout: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return null;
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;

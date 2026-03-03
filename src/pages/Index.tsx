@@ -2,7 +2,11 @@ import { Navigate } from 'react-router-dom';
  import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return null;
+  }
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
