@@ -51,6 +51,7 @@ export interface Patient {
   relevantConditionsDetails?: string;
   notes?: string; // Anmerkungen
   auftrag?: string; // Auftrag - Pflicht bei Teilstation
+  moveBackReason?: string; // Grund für Zurücksetzung auf Anfrageliste
   
   // Aufnahme
   admissionType: AdmissionType;

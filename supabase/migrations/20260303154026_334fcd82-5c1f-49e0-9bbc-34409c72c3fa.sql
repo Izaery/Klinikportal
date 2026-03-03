@@ -1,0 +1,1 @@
+ALTER TABLE public.patients ADD COLUMN move_back_reason text;

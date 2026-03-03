@@ -37,6 +37,7 @@ export type Database = {
           last_modified_by_display_name: string
           last_name: string
           monday_call: boolean | null
+          move_back_reason: string | null
           notes: string | null
           on_waiting_list: boolean | null
           phone: string | null
@@ -73,6 +74,7 @@ export type Database = {
           last_modified_by_display_name: string
           last_name: string
           monday_call?: boolean | null
+          move_back_reason?: string | null
           notes?: string | null
           on_waiting_list?: boolean | null
           phone?: string | null
@@ -109,6 +111,7 @@ export type Database = {
           last_modified_by_display_name?: string
           last_name?: string
           monday_call?: boolean | null
+          move_back_reason?: string | null
           notes?: string | null
           on_waiting_list?: boolean | null
           phone?: string | null
