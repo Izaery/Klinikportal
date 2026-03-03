@@ -40,6 +40,7 @@ export type Database = {
           notes: string | null
           on_waiting_list: boolean | null
           phone: string | null
+          pre_interview_confirmed: boolean | null
           pre_interview_date: string | null
           relevant_conditions: boolean
           relevant_conditions_details: string | null
@@ -75,6 +76,7 @@ export type Database = {
           notes?: string | null
           on_waiting_list?: boolean | null
           phone?: string | null
+          pre_interview_confirmed?: boolean | null
           pre_interview_date?: string | null
           relevant_conditions?: boolean
           relevant_conditions_details?: string | null
@@ -110,6 +112,7 @@ export type Database = {
           notes?: string | null
           on_waiting_list?: boolean | null
           phone?: string | null
+          pre_interview_confirmed?: boolean | null
           pre_interview_date?: string | null
           relevant_conditions?: boolean
           relevant_conditions_details?: string | null

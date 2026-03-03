@@ -57,6 +57,7 @@ export interface Patient {
   urgency?: Urgency; // Pflicht bei Teilstation
   station?: Station; // Nur bei Teilstation
   onWaitingList?: boolean; // Auf Warteliste (nach Vorgespräch, vor Aufnahme)
+  preInterviewConfirmed?: boolean; // Vorgesprächstermin bestätigt
   vollStation?: VollStation; // Pflicht bei Vollstation (E, F, G)
   secondaryStation?: VollStation; // Optional bei Vollstation - sekundäre Station
   mondayCall?: boolean; // Montagsanruf - nur bei Vollstation

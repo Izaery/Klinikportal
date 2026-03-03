@@ -49,6 +49,7 @@ const PatientFormPage: React.FC = () => {
   const [relevantConditions, setRelevantConditions] = useState(false);
   const [relevantConditionsDetails, setRelevantConditionsDetails] = useState('');
   const [notes, setNotes] = useState('');
+  const [auftrag, setAuftrag] = useState('');
   const [admissionType, setAdmissionType] = useState<AdmissionType>('TEILSTATION');
   const [urgency, setUrgency] = useState<Urgency | ''>('elektiv');
   const [station, setStation] = useState<Station | ''>('');
@@ -79,6 +80,7 @@ const PatientFormPage: React.FC = () => {
       setRelevantConditions(existingPatient.relevantConditions);
       setRelevantConditionsDetails(existingPatient.relevantConditionsDetails || '');
       setNotes(existingPatient.notes || '');
+      setAuftrag(existingPatient.auftrag || '');
       setAdmissionType(existingPatient.admissionType);
       setUrgency(existingPatient.urgency || '');
       setStation(existingPatient.station || '');
@@ -148,6 +150,11 @@ const PatientFormPage: React.FC = () => {
       newErrors.urgency = 'Dringlichkeit ist erforderlich';
     }
 
+    // Auftrag ist Pflicht bei Teilstation
+    if (admissionType === 'TEILSTATION' && !auftrag.trim()) {
+      newErrors.auftrag = 'Auftrag ist erforderlich bei Teilstation';
+    }
+
     // Vollstation ist Pflicht bei Aufnahmeart Vollstation
     if (admissionType === 'VOLLSTATION' && !isIntake && !vollStation) {
       newErrors.vollStation = 'Station (Vollstation) ist erforderlich';
@@ -184,6 +191,7 @@ const PatientFormPage: React.FC = () => {
         relevantConditions,
         relevantConditionsDetails: relevantConditions ? relevantConditionsDetails.trim() : undefined,
         notes: notes.trim() || undefined,
+        auftrag: admissionType === 'TEILSTATION' ? auftrag.trim() : undefined,
         admissionType,
         urgency: urgency as Urgency,
         station: admissionType === 'TEILSTATION' && !isIntake && station ? (station as Station) : undefined,
@@ -629,12 +637,29 @@ const PatientFormPage: React.FC = () => {
             )}
 
             {admissionType === 'TEILSTATION' && (
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Bei Teilstation erfolgt die Stationszuweisung später über die Anfrageliste durch Ärzte oder Manager.
-                </AlertDescription>
-              </Alert>
+              <>
+                <div>
+                  <Label htmlFor="auftrag">Auftrag *</Label>
+                  <Textarea
+                    id="auftrag"
+                    value={auftrag}
+                    onChange={(e) => setAuftrag(e.target.value)}
+                    placeholder="Ziele des Aufenthalts..."
+                    className={errors.auftrag ? 'border-destructive' : ''}
+                  />
+                  <InputError error={errors.auftrag} />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Beschreiben Sie die Ziele des teilstationären Aufenthalts
+                  </p>
+                </div>
+
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Bei Teilstation erfolgt die Stationszuweisung später über die Anfrageliste durch Ärzte oder Manager.
+                  </AlertDescription>
+                </Alert>
+              </>
             )}
           </div>
         </div>
