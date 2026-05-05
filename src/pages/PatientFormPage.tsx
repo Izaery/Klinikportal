@@ -304,6 +304,18 @@ const PatientFormPage: React.FC = () => {
               />
               <InputError error={errors.caseNumber} />
             </div>
+
+            <div className="md:col-span-2">
+              <Label htmlFor="insurance">Krankenkasse *</Label>
+              <Input
+                id="insurance"
+                value={insurance}
+                onChange={(e) => setInsurance(e.target.value)}
+                placeholder="z.B. AOK, TK, Barmer..."
+                className={errors.insurance ? 'border-destructive' : ''}
+              />
+              <InputError error={errors.insurance} />
+            </div>
           </div>
 
           <div className="mt-4">
