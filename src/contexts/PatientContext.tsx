@@ -49,6 +49,7 @@ const mapDbToPatient = (row: any): Patient => ({
   notes: row.notes || undefined,
   auftrag: row.auftrag || undefined,
   moveBackReason: row.move_back_reason || undefined,
+  insurance: row.insurance || '',
   admissionType: row.admission_type,
   urgency: row.urgency || undefined,
   station: row.station || undefined,
@@ -89,6 +90,7 @@ const mapPatientToDb = (patient: Partial<Patient>): Record<string, any> => {
   if (patient.notes !== undefined) dbData.notes = patient.notes || null;
   if (patient.auftrag !== undefined) dbData.auftrag = patient.auftrag || null;
   if (patient.moveBackReason !== undefined) dbData.move_back_reason = patient.moveBackReason || null;
+  if (patient.insurance !== undefined) dbData.insurance = patient.insurance || null;
   if (patient.admissionType !== undefined) dbData.admission_type = patient.admissionType;
   if (patient.urgency !== undefined) dbData.urgency = patient.urgency || null;
   if (patient.station !== undefined) dbData.station = patient.station || null;
