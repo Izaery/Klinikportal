@@ -52,6 +52,7 @@ export interface Patient {
   notes?: string; // Anmerkungen
   auftrag?: string; // Auftrag - Pflicht bei Teilstation
   moveBackReason?: string; // Grund für Zurücksetzung auf Anfrageliste
+  insurance: string; // Krankenkasse - Pflichtfeld
   
   // Aufnahme
   admissionType: AdmissionType;
