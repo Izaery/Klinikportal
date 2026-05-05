@@ -481,6 +481,9 @@ export const PatientTable: React.FC<PatientTableProps> = ({
                                 {patient.caseNumber && (
                                   <p><span className="font-medium text-foreground">Fallnummer:</span> {patient.caseNumber}</p>
                                 )}
+                                {patient.insurance && (
+                                  <p><span className="font-medium text-foreground">Krankenkasse:</span> {patient.insurance}</p>
+                                )}
                               </div>
                             </div>
                             
