@@ -10,7 +10,8 @@ import {
   ChevronUp,
   UserPlus,
   Undo2,
-  CheckCircle2
+  CheckCircle2,
+  AlertTriangle
 } from 'lucide-react';
 import { Patient, Station, VollStation, URGENCY_LABELS, STATION_LABELS, VOLL_STATION_LABELS, GENDER_LABELS } from '@/types';
 import { Input } from '@/components/ui/input';
@@ -305,7 +306,17 @@ export const PatientTable: React.FC<PatientTableProps> = ({
                           )}
                           {col.key === 'urgency' && (
                             patient.urgency ? (
-                              <Badge variant={patient.urgency === 'dringend' ? 'urgent' : 'elective'}>
+                              <Badge
+                                variant={patient.urgency === 'dringend' ? 'urgent' : 'elective'}
+                                className={cn(
+                                  'gap-1',
+                                  patient.urgency === 'dringend' &&
+                                    'animate-pulse shadow-md shadow-urgent/40'
+                                )}
+                              >
+                                {patient.urgency === 'dringend' && (
+                                  <AlertTriangle className="h-3 w-3" />
+                                )}
                                 {URGENCY_LABELS[patient.urgency]}
                               </Badge>
                             ) : (
