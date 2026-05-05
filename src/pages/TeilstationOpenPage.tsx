@@ -43,6 +43,7 @@ const TeilstationOpenPage: React.FC = () => {
     { key: 'firstName', label: 'Vorname', sortable: true },
     { key: 'birthDate', label: 'Geburtsdatum', sortable: true },
     { key: 'diagnosis', label: 'Diagnose', sortable: true },
+    { key: 'urgency', label: 'Dringlichkeit', sortable: true, width: '140px' },
     { key: 'lastModifiedAt', label: 'Geändert von', sortable: true },
     ...(canAssignStation() ? [{ key: 'stationAssign', label: 'Station zuweisen', width: '180px' }] : []),
     ...((canEditPatients() || canDeletePatients()) ? [{ key: 'actions', label: 'Aktionen', width: '100px' }] : []),
