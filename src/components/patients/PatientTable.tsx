@@ -5,7 +5,7 @@ import {
   ArrowUp, 
   ArrowDown,
   Edit,
-  Trash2,
+  Archive,
   ChevronDown,
   ChevronUp,
   UserPlus,
@@ -264,6 +264,9 @@ export const PatientTable: React.FC<PatientTableProps> = ({
                         <td key={col.key} onClick={(e) => ['actions', 'stationAssign', 'admissionAction', 'moveBackAction', 'confirmAction'].includes(col.key) ? e.stopPropagation() : undefined}>
                           {col.key === 'lastName' && patient.lastName}
                           {col.key === 'firstName' && patient.firstName}
+                          {col.key === 'gender' && (
+                            <span className="font-medium">{patient.gender.toUpperCase()}</span>
+                          )}
                           {col.key === 'mondayCall' && (
                             <Badge variant={patient.mondayCall ? 'default' : 'secondary'}>
                               {patient.mondayCall ? 'Ja' : 'Nein'}
@@ -454,8 +457,9 @@ export const PatientTable: React.FC<PatientTableProps> = ({
                                     e.stopPropagation();
                                     onDelete(patient);
                                   }}
+                                    title="Archivieren"
                                 >
-                                  <Trash2 className="h-4 w-4" />
+                                    <Archive className="h-4 w-4" />
                                 </Button>
                               )}
                             </div>
@@ -476,6 +480,9 @@ export const PatientTable: React.FC<PatientTableProps> = ({
                                 <p><span className="font-medium text-foreground">Geschlecht:</span> {GENDER_LABELS[patient.gender]}</p>
                                 {patient.caseNumber && (
                                   <p><span className="font-medium text-foreground">Fallnummer:</span> {patient.caseNumber}</p>
+                                )}
+                                {patient.insurance && (
+                                  <p><span className="font-medium text-foreground">Krankenkasse:</span> {patient.insurance}</p>
                                 )}
                               </div>
                             </div>

@@ -67,13 +67,13 @@ router.post('/', async (req: AuthenticatedRequest, res: Response) => {
           relevant_conditions_details, notes, auftrag, admission_type, urgency,
           station, on_waiting_list, voll_station, secondary_station,
           monday_call, pre_interview_date, pre_interview_confirmed, admission_date,
-          move_back_reason,
+          move_back_reason, insurance,
           created_by, created_by_display_name,
           last_modified_by, last_modified_by_display_name
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
           $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-          $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31
+          $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32
         ) RETURNING *`,
         [
           data.first_name,
@@ -103,6 +103,7 @@ router.post('/', async (req: AuthenticatedRequest, res: Response) => {
           data.pre_interview_confirmed || false,
           data.admission_date || null,
           data.move_back_reason || null,
+          data.insurance || null,
           userId,
           displayName,
           userId,
@@ -162,6 +163,7 @@ router.patch('/:id', async (req: AuthenticatedRequest, res: Response) => {
       auftrag: 'auftrag',
       pre_interview_confirmed: 'pre_interview_confirmed',
       move_back_reason: 'move_back_reason',
+      insurance: 'insurance',
     };
 
     for (const [key, dbField] of Object.entries(fieldMap)) {

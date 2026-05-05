@@ -50,6 +50,7 @@ const PatientFormPage: React.FC = () => {
   const [relevantConditionsDetails, setRelevantConditionsDetails] = useState('');
   const [notes, setNotes] = useState('');
   const [auftrag, setAuftrag] = useState('');
+  const [insurance, setInsurance] = useState('');
   const [admissionType, setAdmissionType] = useState<AdmissionType>('TEILSTATION');
   const [urgency, setUrgency] = useState<Urgency | ''>('elektiv');
   const [station, setStation] = useState<Station | ''>('');
@@ -81,6 +82,7 @@ const PatientFormPage: React.FC = () => {
       setRelevantConditionsDetails(existingPatient.relevantConditionsDetails || '');
       setNotes(existingPatient.notes || '');
       setAuftrag(existingPatient.auftrag || '');
+      setInsurance(existingPatient.insurance || '');
       setAdmissionType(existingPatient.admissionType);
       setUrgency(existingPatient.urgency || '');
       setStation(existingPatient.station || '');
@@ -155,6 +157,11 @@ const PatientFormPage: React.FC = () => {
       newErrors.auftrag = 'Auftrag ist erforderlich bei Teilstation';
     }
 
+    // Krankenkasse ist immer Pflicht
+    if (!insurance.trim()) {
+      newErrors.insurance = 'Krankenkasse ist erforderlich';
+    }
+
     // Vollstation ist Pflicht bei Aufnahmeart Vollstation
     if (admissionType === 'VOLLSTATION' && !isIntake && !vollStation) {
       newErrors.vollStation = 'Station (Vollstation) ist erforderlich';
@@ -192,15 +199,18 @@ const PatientFormPage: React.FC = () => {
         relevantConditionsDetails: relevantConditions ? relevantConditionsDetails.trim() : undefined,
         notes: notes.trim() || undefined,
         auftrag: admissionType === 'TEILSTATION' ? auftrag.trim() : undefined,
+        insurance: insurance.trim(),
         admissionType,
         urgency: urgency as Urgency,
         station: admissionType === 'TEILSTATION' && !isIntake && station ? (station as Station) : undefined,
         vollStation: admissionType === 'VOLLSTATION' && !isIntake && vollStation ? (vollStation as VollStation) : undefined,
         secondaryStation: admissionType === 'VOLLSTATION' && !isIntake && secondaryStation ? (secondaryStation as VollStation) : undefined,
         mondayCall: admissionType === 'VOLLSTATION' ? mondayCall : undefined,
-        preInterviewDate: admissionType === 'VOLLSTATION' && !isIntake
-          ? new Date().toISOString() 
-          : undefined,
+        preInterviewDate: isEditMode
+          ? existingPatient?.preInterviewDate
+          : admissionType === 'VOLLSTATION' && !isIntake
+            ? new Date().toISOString()
+            : undefined,
         admissionDate: admissionDate ? admissionDate.toISOString() : undefined,
       };
 
@@ -293,6 +303,18 @@ const PatientFormPage: React.FC = () => {
                 className={errors.caseNumber ? 'border-destructive' : ''}
               />
               <InputError error={errors.caseNumber} />
+            </div>
+
+            <div className="md:col-span-2">
+              <Label htmlFor="insurance">Krankenkasse *</Label>
+              <Input
+                id="insurance"
+                value={insurance}
+                onChange={(e) => setInsurance(e.target.value)}
+                placeholder="z.B. AOK, TK, Barmer..."
+                className={errors.insurance ? 'border-destructive' : ''}
+              />
+              <InputError error={errors.insurance} />
             </div>
           </div>
 
