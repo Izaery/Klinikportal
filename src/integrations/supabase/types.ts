@@ -32,6 +32,7 @@ export type Database = {
           first_name: string
           gender: Database["public"]["Enums"]["gender"]
           id: string
+          insurance: string | null
           last_modified_at: string
           last_modified_by: string
           last_modified_by_display_name: string
@@ -69,6 +70,7 @@ export type Database = {
           first_name: string
           gender: Database["public"]["Enums"]["gender"]
           id?: string
+          insurance?: string | null
           last_modified_at?: string
           last_modified_by: string
           last_modified_by_display_name: string
@@ -106,6 +108,7 @@ export type Database = {
           first_name?: string
           gender?: Database["public"]["Enums"]["gender"]
           id?: string
+          insurance?: string | null
           last_modified_at?: string
           last_modified_by?: string
           last_modified_by_display_name?: string
