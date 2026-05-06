@@ -20,7 +20,7 @@ import { Badge } from '@/components/ui/badge';
  import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
-type SortField = 'lastName' | 'firstName' | 'birthDate' | 'diagnosis' | 'station' | 'vollStation' | 'urgency' | 'lastModifiedAt' | 'preInterviewDate' | 'admissionDate' | 'waitingTime' | 'mondayCall';
+type SortField = 'lastName' | 'firstName' | 'birthDate' | 'diagnosis' | 'station' | 'vollStation' | 'urgency' | 'lastModifiedAt' | 'preInterviewDate' | 'admissionDate' | 'waitingTime' | 'mondayCall' | 'gender';
 type SortDirection = 'asc' | 'desc';
 
 interface Column {
@@ -129,6 +129,10 @@ export const PatientTable: React.FC<PatientTableProps> = ({
           aVal = a.mondayCall ? 1 : 0;
           bVal = b.mondayCall ? 1 : 0;
           break;
+        case 'gender':
+          aVal = (a.gender || '').toLowerCase();
+          bVal = (b.gender || '').toLowerCase();
+          break;
       }
 
       if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
@@ -140,7 +144,7 @@ export const PatientTable: React.FC<PatientTableProps> = ({
   }, [patients, searchTerm, sortField, sortDirection]);
 
   const handleSort = (field: string) => {
-    const sortableFields: SortField[] = ['lastName', 'firstName', 'birthDate', 'diagnosis', 'station', 'vollStation', 'urgency', 'lastModifiedAt', 'preInterviewDate', 'admissionDate', 'waitingTime', 'mondayCall'];
+    const sortableFields: SortField[] = ['lastName', 'firstName', 'birthDate', 'diagnosis', 'station', 'vollStation', 'urgency', 'lastModifiedAt', 'preInterviewDate', 'admissionDate', 'waitingTime', 'mondayCall', 'gender'];
     if (!sortableFields.includes(field as SortField)) return;
     
     if (sortField === field) {
@@ -165,9 +169,10 @@ export const PatientTable: React.FC<PatientTableProps> = ({
     });
   };
 
-  const calculateWaitingDays = (preInterviewDate: string | undefined): number | null => {
-    if (!preInterviewDate) return null;
-    const start = new Date(preInterviewDate);
+  const calculateWaitingDays = (patient: Patient): number | null => {
+    const startDate = patient.preInterviewDate || patient.createdAt;
+    if (!startDate) return null;
+    const start = new Date(startDate);
     const today = new Date();
     const diffTime = today.getTime() - start.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -325,7 +330,7 @@ export const PatientTable: React.FC<PatientTableProps> = ({
                           )}
                           {col.key === 'waitingTime' && (
                             (() => {
-                              const days = calculateWaitingDays(patient.preInterviewDate);
+                              const days = calculateWaitingDays(patient);
                               if (days === null) return <span className="text-muted-foreground">-</span>;
                               return (
                                 <Badge className={cn('font-medium', getWaitingBadgeClass(days))}>
