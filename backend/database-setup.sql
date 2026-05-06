@@ -107,7 +107,7 @@ CREATE TABLE public.patients (
   pre_interview_confirmed boolean DEFAULT false,
   voll_station voll_station,
   secondary_station voll_station,
-  monday_call boolean DEFAULT false,
+  monday_call boolean,
   pre_interview_date timestamptz,
   admission_date timestamptz,
   
@@ -397,3 +397,6 @@ ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS insurance text;
 ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS auftrag text;
 ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS move_back_reason text;
 ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS pre_interview_confirmed boolean DEFAULT false;
+
+-- monday_call: DEFAULT entfernen, damit unbeantwortet als NULL gespeichert wird
+ALTER TABLE public.patients ALTER COLUMN monday_call DROP DEFAULT;
