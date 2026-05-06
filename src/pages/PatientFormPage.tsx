@@ -56,7 +56,7 @@ const PatientFormPage: React.FC = () => {
   const [station, setStation] = useState<Station | ''>('');
   const [vollStation, setVollStation] = useState<VollStation | ''>('');
   const [secondaryStation, setSecondaryStation] = useState<VollStation | ''>('');
-  const [mondayCall, setMondayCall] = useState(false);
+  const [mondayCall, setMondayCall] = useState<boolean | null>(null);
   const [preInterviewDate, setPreInterviewDate] = useState<Date | undefined>(new Date());
   const [admissionDate, setAdmissionDate] = useState<Date | undefined>();
 
@@ -88,7 +88,9 @@ const PatientFormPage: React.FC = () => {
       setStation(existingPatient.station || '');
       setVollStation(existingPatient.vollStation || '');
       setSecondaryStation(existingPatient.secondaryStation || '');
-      setMondayCall(existingPatient.mondayCall || false);
+      setMondayCall(
+        typeof existingPatient.mondayCall === 'boolean' ? existingPatient.mondayCall : null
+      );
       if (existingPatient.preInterviewDate) {
         setPreInterviewDate(new Date(existingPatient.preInterviewDate));
       }
@@ -167,6 +169,11 @@ const PatientFormPage: React.FC = () => {
       newErrors.vollStation = 'Station (Vollstation) ist erforderlich';
     }
 
+    // Montagsanruf ist Pflicht bei Vollstation
+    if (admissionType === 'VOLLSTATION' && mondayCall === null) {
+      newErrors.mondayCall = 'Montagsanruf ist erforderlich';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -205,7 +212,7 @@ const PatientFormPage: React.FC = () => {
         station: admissionType === 'TEILSTATION' && !isIntake && station ? (station as Station) : undefined,
         vollStation: admissionType === 'VOLLSTATION' && !isIntake && vollStation ? (vollStation as VollStation) : undefined,
         secondaryStation: admissionType === 'VOLLSTATION' && !isIntake && secondaryStation ? (secondaryStation as VollStation) : undefined,
-        mondayCall: admissionType === 'VOLLSTATION' ? mondayCall : undefined,
+        mondayCall: admissionType === 'VOLLSTATION' ? (mondayCall ?? false) : undefined,
         preInterviewDate: isEditMode
           ? existingPatient?.preInterviewDate
           : admissionType === 'VOLLSTATION' && !isIntake
@@ -538,15 +545,23 @@ const PatientFormPage: React.FC = () => {
             </div>
 
             {admissionType === 'VOLLSTATION' && (
-              <div className="flex items-center justify-between p-3 rounded-lg border border-border">
-                <Label htmlFor="mondayCall" className="font-normal cursor-pointer">
-                  Montagsanruf
-                </Label>
-                <Switch
-                  id="mondayCall"
-                  checked={mondayCall}
-                  onCheckedChange={setMondayCall}
-                />
+              <div className="p-3 rounded-lg border border-border">
+                <Label>Montagsanruf *</Label>
+                <RadioGroup
+                  value={mondayCall === null ? '' : mondayCall ? 'yes' : 'no'}
+                  onValueChange={(value) => setMondayCall(value === 'yes')}
+                  className="flex gap-6 mt-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="yes" id="mondayCall-yes" />
+                    <Label htmlFor="mondayCall-yes" className="font-normal">Ja</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="no" id="mondayCall-no" />
+                    <Label htmlFor="mondayCall-no" className="font-normal">Nein</Label>
+                  </div>
+                </RadioGroup>
+                <InputError error={errors.mondayCall} />
               </div>
             )}
 
