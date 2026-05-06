@@ -95,12 +95,16 @@ CREATE TABLE public.patients (
   relevant_conditions boolean NOT NULL DEFAULT false,
   relevant_conditions_details text,
   notes text,
+  auftrag text,
+  move_back_reason text,
+  insurance text,
   
   -- Aufnahme
   admission_type admission_type NOT NULL,
   urgency urgency,
   station station,
   on_waiting_list boolean DEFAULT false,
+  pre_interview_confirmed boolean DEFAULT false,
   voll_station voll_station,
   secondary_station voll_station,
   monday_call boolean DEFAULT false,
@@ -384,3 +388,12 @@ SELECT public.create_user(
 -- =====================================================
 -- FERTIG!
 -- =====================================================
+
+-- =====================================================
+-- MIGRATIONEN FÜR BESTEHENDE DATENBANKEN (idempotent)
+-- Auf bestehender lokaler DB ausführen, um neue Spalten nachzuziehen.
+-- =====================================================
+ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS insurance text;
+ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS auftrag text;
+ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS move_back_reason text;
+ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS pre_interview_confirmed boolean DEFAULT false;
