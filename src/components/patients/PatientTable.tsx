@@ -122,8 +122,12 @@ export const PatientTable: React.FC<PatientTableProps> = ({
           bVal = b.admissionDate ? new Date(b.admissionDate).getTime() : 0;
           break;
         case 'waitingTime':
-          aVal = a.preInterviewDate ? new Date().getTime() - new Date(a.preInterviewDate).getTime() : 0;
-          bVal = b.preInterviewDate ? new Date().getTime() - new Date(b.preInterviewDate).getTime() : 0;
+          {
+            const aStart = a.preInterviewDate || a.createdAt;
+            const bStart = b.preInterviewDate || b.createdAt;
+            aVal = aStart ? new Date().getTime() - new Date(aStart).getTime() : 0;
+            bVal = bStart ? new Date().getTime() - new Date(bStart).getTime() : 0;
+          }
           break;
         case 'mondayCall':
           aVal = a.mondayCall ? 1 : 0;
