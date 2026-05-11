@@ -3,7 +3,8 @@ import {
   Users, 
   Building2, 
   ClipboardList, 
-  Clock
+  Clock,
+  CalendarDays
 } from 'lucide-react';
  import { usePatients } from '@/contexts/PatientContext';
  import { useAuth } from '@/contexts/AuthContext';
@@ -15,6 +16,7 @@ const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { 
+    patients,
     getVollstationPatients, 
     getTeilstationPatients, 
     getOpenTeilstationPatients,
@@ -27,6 +29,39 @@ const DashboardPage: React.FC = () => {
   const teilstationCount = getTeilstationPatients().length;
   const openCount = getOpenTeilstationPatients().length;
   const recentPatients = getRecentlyModified(5);
+
+  // Tagesaktuelle Aufnahmen & Vorgespräche (nur heute)
+  const isToday = (dateString?: string) => {
+    if (!dateString) return false;
+    const d = new Date(dateString);
+    const t = new Date();
+    return d.getFullYear() === t.getFullYear()
+      && d.getMonth() === t.getMonth()
+      && d.getDate() === t.getDate();
+  };
+
+  type TodayEntry = {
+    patient: typeof patients[number];
+    type: 'AUFNAHME' | 'VORGESPRAECH';
+    date: string;
+  };
+
+  const todayEntries: TodayEntry[] = patients
+    .filter(p => !p.archived)
+    .flatMap(p => {
+      const entries: TodayEntry[] = [];
+      if (isToday(p.admissionDate)) {
+        entries.push({ patient: p, type: 'AUFNAHME', date: p.admissionDate! });
+      }
+      if (isToday(p.preInterviewDate)) {
+        entries.push({ patient: p, type: 'VORGESPRAECH', date: p.preInterviewDate! });
+      }
+      return entries;
+    })
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  const formatTime = (dateString: string) =>
+    new Date(dateString).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 
   const stationCounts = {
     A: getStationPatients('A').length,
@@ -159,6 +194,75 @@ const DashboardPage: React.FC = () => {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Heute */}
+      <div className="clinic-card">
+        <div className="flex items-center gap-2 mb-4">
+          <CalendarDays className="h-5 w-5 text-muted-foreground" />
+          <h2 className="text-lg font-semibold text-foreground">
+            Heute ({todayEntries.length})
+          </h2>
+        </div>
+
+        {todayEntries.length === 0 ? (
+          <p className="text-muted-foreground text-center py-8">
+            Keine Aufnahmen oder Vorgespräche für heute
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="clinic-table">
+              <thead>
+                <tr>
+                  <th>Uhrzeit</th>
+                  <th>Typ</th>
+                  <th>Name</th>
+                  <th>Aufnahmeart</th>
+                  <th>Station</th>
+                </tr>
+              </thead>
+              <tbody>
+                {todayEntries.map((entry, idx) => {
+                  const p = entry.patient;
+                  const stationLabel = p.admissionType === 'VOLLSTATION'
+                    ? (p.vollStation ? VOLL_STATION_LABELS[p.vollStation] : null)
+                    : (p.station ? STATION_LABELS[p.station] : null);
+                  return (
+                    <tr key={`${p.id}-${entry.type}-${idx}`}>
+                      <td className="font-medium">{formatTime(entry.date)}</td>
+                      <td>
+                        <Badge variant={entry.type === 'AUFNAHME' ? 'default' : 'secondary'}>
+                          {entry.type === 'AUFNAHME' ? 'Aufnahme' : 'Vorgespräch'}
+                        </Badge>
+                      </td>
+                      <td className="font-medium">
+                        {p.lastName}, {p.firstName}
+                      </td>
+                      <td>
+                        <Badge variant={p.admissionType === 'VOLLSTATION' ? 'vollstation' : 'teilstation'}>
+                          {p.admissionType === 'VOLLSTATION' ? 'Voll' : 'Teil'}
+                        </Badge>
+                      </td>
+                      <td>
+                        {stationLabel ? (
+                          p.admissionType === 'VOLLSTATION' ? (
+                            <Badge variant="secondary">{stationLabel}</Badge>
+                          ) : (
+                            <Badge variant={`station${p.station}` as 'stationA' | 'stationB' | 'stationC' | 'stationD'}>
+                              {stationLabel}
+                            </Badge>
+                          )
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Zuletzt geändert */}
