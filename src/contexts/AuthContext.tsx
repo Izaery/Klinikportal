@@ -164,7 +164,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const canEditPatients = useCallback((): boolean => {
     if (isReadOnly()) return false;
-    return hasAnyRole(['ADMIN', 'MANAGER']);
+    return hasAnyRole(['ADMIN', 'MANAGER', 'INTAKE', 'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d', 'arzt_allgemein']);
   }, [hasAnyRole, isReadOnly]);
 
   const canDeletePatients = useCallback((): boolean => {
