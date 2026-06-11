@@ -14,7 +14,7 @@ import { useNavigate } from 'react-router-dom';
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, hasAnyRole } = useAuth();
   const { 
     patients,
     getVollstationPatients, 
