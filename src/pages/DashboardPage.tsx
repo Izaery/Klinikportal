@@ -30,6 +30,8 @@ const DashboardPage: React.FC = () => {
   const openCount = getOpenTeilstationPatients().length;
   const recentPatients = getRecentlyModified(5);
 
+  const canViewToday = hasAnyRole(['ADMIN', 'INTAKE']);
+
   // Tagesaktuelle Aufnahmen & Vorgespräche (nur heute)
   const isToday = (dateString?: string) => {
     if (!dateString) return false;
