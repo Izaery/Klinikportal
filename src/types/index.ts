@@ -82,6 +82,9 @@ export interface Patient {
   lastModifiedByDisplayName: string;
   lastModifiedAt: string;
   archived: boolean;
+
+  // Kontakthistorie
+  contacts?: PatientContact[];
 }
 
 export interface AuthState {
