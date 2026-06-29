@@ -139,6 +139,13 @@ export const patientsApi = {
       method: 'DELETE',
     });
   },
+
+  async addContact(id: string, content: string) {
+    return fetchWithAuth<any>(`/patients/${id}/contacts`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    });
+  },
 };
 
 // Users API (Admin)
