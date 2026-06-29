@@ -266,4 +266,37 @@ router.delete(
   }
 );
 
+// Kontakteintrag zu Patient hinzufügen
+router.post('/:id/contacts', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const displayName = req.user!.displayName;
+    const { id } = req.params;
+    const { content } = req.body;
+
+    if (!content || typeof content !== 'string' || !content.trim()) {
+      return res.status(400).json({ error: 'Inhalt ist erforderlich' });
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query("SELECT set_current_user_id($1)", [userId]);
+
+      const result = await client.query(
+        `INSERT INTO public.patient_contacts (patient_id, content, created_by, created_by_display_name)
+         VALUES ($1, $2, $3, $4)
+         RETURNING *`,
+        [id, content.trim(), userId, displayName]
+      );
+
+      res.status(201).json(result.rows[0]);
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('Add patient contact error:', error);
+    res.status(500).json({ error: 'Fehler beim Speichern des Kontakteintrags' });
+  }
+});
+
 export default router;
