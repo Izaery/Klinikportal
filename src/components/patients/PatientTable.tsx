@@ -596,6 +596,89 @@ export const PatientTable: React.FC<PatientTableProps> = ({
                                 <p><span className="font-medium text-foreground">Geändert am:</span> {formatDateTime(patient.lastModifiedAt)}</p>
                               </div>
                             </div>
+
+                            {/* Kontakthistorie */}
+                            <div className="md:col-span-2 lg:col-span-3" onClick={(e) => e.stopPropagation()}>
+                              <h4 className="font-semibold mb-2 text-foreground flex items-center gap-2">
+                                <MessageSquarePlus className="h-4 w-4" />
+                                Patientenkontakt
+                              </h4>
+                              {canEditPatients() && (
+                                <div className="space-y-2 mb-3">
+                                  <Textarea
+                                    placeholder="Ergebnis der Kontaktaufnahme dokumentieren..."
+                                    value={contactDrafts[patient.id] ?? ''}
+                                    onChange={(e) =>
+                                      setContactDrafts((prev) => ({ ...prev, [patient.id]: e.target.value }))
+                                    }
+                                    rows={3}
+                                  />
+                                  <div className="flex justify-end">
+                                    <Button
+                                      size="sm"
+                                      disabled={
+                                        !!savingContact[patient.id] ||
+                                        !(contactDrafts[patient.id] ?? '').trim()
+                                      }
+                                      onClick={async () => {
+                                        const content = (contactDrafts[patient.id] ?? '').trim();
+                                        if (!content) return;
+                                        setSavingContact((prev) => ({ ...prev, [patient.id]: true }));
+                                        const ok = await addPatientContact(patient.id, content);
+                                        setSavingContact((prev) => ({ ...prev, [patient.id]: false }));
+                                        if (ok) {
+                                          setContactDrafts((prev) => ({ ...prev, [patient.id]: '' }));
+                                          setShowHistory((prev) => ({ ...prev, [patient.id]: true }));
+                                        }
+                                      }}
+                                    >
+                                      {savingContact[patient.id] ? 'Speichert...' : 'Kontakt speichern'}
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+
+                              <Collapsible
+                                open={!!showHistory[patient.id]}
+                                onOpenChange={(open) =>
+                                  setShowHistory((prev) => ({ ...prev, [patient.id]: open }))
+                                }
+                              >
+                                <CollapsibleTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="gap-2 px-2">
+                                    <History className="h-4 w-4" />
+                                    Frühere Kontakte ({patient.contacts?.length ?? 0})
+                                    {showHistory[patient.id] ? (
+                                      <ChevronUp className="h-4 w-4" />
+                                    ) : (
+                                      <ChevronDown className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </CollapsibleTrigger>
+                                <CollapsibleContent className="mt-2 space-y-2">
+                                  {(patient.contacts?.length ?? 0) === 0 ? (
+                                    <p className="text-sm text-muted-foreground italic">
+                                      Noch keine Kontakte dokumentiert.
+                                    </p>
+                                  ) : (
+                                    patient.contacts!.map((c) => (
+                                      <div
+                                        key={c.id}
+                                        className="rounded-md border border-border bg-background p-3 text-sm"
+                                      >
+                                        <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                                          <span className="font-medium text-foreground">
+                                            {c.createdByDisplayName}
+                                          </span>
+                                          <span>{formatDateTime(c.createdAt)}</span>
+                                        </div>
+                                        <p className="text-foreground whitespace-pre-wrap">{c.content}</p>
+                                      </div>
+                                    ))
+                                  )}
+                                </CollapsibleContent>
+                              </Collapsible>
+                            </div>
                           </div>
                         </td>
                       </tr>
