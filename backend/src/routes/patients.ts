@@ -14,7 +14,20 @@ router.get('/', async (req: AuthenticatedRequest, res: Response) => {
     
     const patients = await queryWithUser(
       userId,
-      `SELECT * FROM public.patients ORDER BY last_modified_at DESC`
+      `SELECT p.*,
+        COALESCE(
+          (SELECT json_agg(json_build_object(
+              'id', c.id,
+              'content', c.content,
+              'created_by', c.created_by,
+              'created_by_display_name', c.created_by_display_name,
+              'created_at', c.created_at
+          ) ORDER BY c.created_at DESC)
+           FROM public.patient_contacts c WHERE c.patient_id = p.id),
+          '[]'::json
+        ) AS contacts
+       FROM public.patients p
+       ORDER BY p.last_modified_at DESC`
     );
 
     res.json(patients);
@@ -32,7 +45,19 @@ router.get('/:id', async (req: AuthenticatedRequest, res: Response) => {
 
     const patients = await queryWithUser(
       userId,
-      `SELECT * FROM public.patients WHERE id = $1`,
+      `SELECT p.*,
+        COALESCE(
+          (SELECT json_agg(json_build_object(
+              'id', c.id,
+              'content', c.content,
+              'created_by', c.created_by,
+              'created_by_display_name', c.created_by_display_name,
+              'created_at', c.created_at
+          ) ORDER BY c.created_at DESC)
+           FROM public.patient_contacts c WHERE c.patient_id = p.id),
+          '[]'::json
+        ) AS contacts
+       FROM public.patients p WHERE p.id = $1`,
       [id]
     );
 
