@@ -136,6 +136,8 @@ const TeilstationOpenPage: React.FC = () => {
         onDelete={canDeletePatients() ? handleDelete : undefined}
         onAssignStation={handleAssignStation}
         showStationAssign={canAssignStation()}
+        defaultSortField="waitingTime"
+        defaultSortDirection="desc"
         emptyMessage="Keine offenen Patienten - alle sind einer Station zugewiesen"
       />
 
