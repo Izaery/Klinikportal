@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { Patient, Station, VollStation } from '@/types';
+import { Patient, Station, VollStation, PatientContact } from '@/types';
  import { useAuth } from './AuthContext';
 import { patientsApi } from '@/lib/api-client';
 import { useToast } from '@/hooks/use-toast';
@@ -15,6 +15,7 @@ interface PatientContextType {
   moveToWaitingList: (id: string, admissionDate?: string) => Promise<boolean>;
   moveBackToAnfrageliste: (id: string, reason: string) => Promise<boolean>;
   confirmPreInterview: (id: string) => Promise<boolean>;
+  addPatientContact: (id: string, content: string) => Promise<boolean>;
   getVollstationPatients: () => Patient[];
   getTeilstationPatients: () => Patient[];
   getOpenTeilstationPatients: () => Patient[];
@@ -67,6 +68,15 @@ const mapDbToPatient = (row: any): Patient => ({
   lastModifiedByDisplayName: row.last_modified_by_display_name,
   lastModifiedAt: row.last_modified_at,
   archived: row.archived,
+  contacts: Array.isArray(row.contacts)
+    ? row.contacts.map((c: any): PatientContact => ({
+        id: c.id,
+        content: c.content,
+        createdBy: c.created_by,
+        createdByDisplayName: c.created_by_display_name,
+        createdAt: c.created_at,
+      }))
+    : [],
 });
 
 // Helper to map Patient to DB format
@@ -272,6 +282,33 @@ export const PatientProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return updatePatient(id, { preInterviewConfirmed: true } as Partial<Patient>);
   }, [updatePatient]);
 
+  const addPatientContact = useCallback(async (id: string, content: string): Promise<boolean> => {
+    if (!user) return false;
+    try {
+      const { data, error } = await patientsApi.addContact(id, content);
+      if (error || !data) {
+        toast({ title: 'Fehler', description: 'Kontakteintrag konnte nicht gespeichert werden.', variant: 'destructive' });
+        return false;
+      }
+      const newContact: PatientContact = {
+        id: data.id,
+        content: data.content,
+        createdBy: data.created_by,
+        createdByDisplayName: data.created_by_display_name,
+        createdAt: data.created_at,
+      };
+      setPatients(prev => prev.map(p =>
+        p.id === id
+          ? { ...p, contacts: [newContact, ...(p.contacts || [])] }
+          : p
+      ));
+      toast({ title: 'Erfolg', description: 'Kontakteintrag gespeichert.' });
+      return true;
+    } catch {
+      return false;
+    }
+  }, [user, toast]);
+
   const getVollstationPatients = useCallback((): Patient[] => {
     return patients.filter(p => !p.archived && p.admissionType === 'VOLLSTATION');
   }, [patients]);
@@ -324,6 +361,7 @@ export const PatientProvider: React.FC<{ children: React.ReactNode }> = ({ child
         moveToWaitingList,
         moveBackToAnfrageliste,
         confirmPreInterview,
+        addPatientContact,
         getVollstationPatients,
         getTeilstationPatients,
         getOpenTeilstationPatients,

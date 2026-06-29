@@ -20,6 +20,14 @@ export type VollStation = 'E' | 'F' | 'G';
 export type Gender = 'm' | 'w' | 'd';
 export type Urgency = 'elektiv' | 'dringend';
 
+export interface PatientContact {
+  id: string;
+  content: string;
+  createdBy: string;
+  createdByDisplayName: string;
+  createdAt: string;
+}
+
 export interface User {
   id: string;
   username: string;
@@ -74,6 +82,9 @@ export interface Patient {
   lastModifiedByDisplayName: string;
   lastModifiedAt: string;
   archived: boolean;
+
+  // Kontakthistorie
+  contacts?: PatientContact[];
 }
 
 export interface AuthState {

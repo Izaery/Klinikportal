@@ -400,3 +400,14 @@ ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS pre_interview_confirmed boo
 
 -- monday_call: DEFAULT entfernen, damit unbeantwortet als NULL gespeichert wird
 ALTER TABLE public.patients ALTER COLUMN monday_call DROP DEFAULT;
+
+-- Patient-Kontakthistorie (mehrere Einträge pro Patient)
+CREATE TABLE IF NOT EXISTS public.patient_contacts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  patient_id uuid NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
+  content text NOT NULL,
+  created_by uuid NOT NULL,
+  created_by_display_name text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_patient_contacts_patient ON public.patient_contacts(patient_id);
