@@ -11,13 +11,18 @@ import {
   UserPlus,
   Undo2,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  MessageSquarePlus,
+  History
 } from 'lucide-react';
 import { Patient, Station, VollStation, URGENCY_LABELS, STATION_LABELS, VOLL_STATION_LABELS, GENDER_LABELS } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
  import { useAuth } from '@/contexts/AuthContext';
+import { usePatients } from '@/contexts/PatientContext';
 import { cn } from '@/lib/utils';
 
 type SortField = 'lastName' | 'firstName' | 'birthDate' | 'diagnosis' | 'station' | 'vollStation' | 'urgency' | 'lastModifiedAt' | 'preInterviewDate' | 'admissionDate' | 'waitingTime' | 'mondayCall' | 'gender';
@@ -41,6 +46,8 @@ interface PatientTableProps {
   onConfirmPreInterview?: (patient: Patient) => void;
   showStationAssign?: boolean;
   emptyMessage?: string;
+  defaultSortField?: SortField;
+  defaultSortDirection?: SortDirection;
 }
 
 export const PatientTable: React.FC<PatientTableProps> = ({
@@ -54,12 +61,18 @@ export const PatientTable: React.FC<PatientTableProps> = ({
   onConfirmPreInterview,
   showStationAssign = false,
   emptyMessage = 'Keine Patienten gefunden',
+  defaultSortField = 'lastName',
+  defaultSortDirection = 'asc',
 }) => {
   const { canEditPatients, canDeletePatients, canAssignStation } = useAuth();
+  const { addPatientContact } = usePatients();
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortField, setSortField] = useState<SortField>('lastName');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [sortField, setSortField] = useState<SortField>(defaultSortField);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(defaultSortDirection);
   const [expandedPatientId, setExpandedPatientId] = useState<string | null>(null);
+  const [contactDrafts, setContactDrafts] = useState<Record<string, string>>({});
+  const [showHistory, setShowHistory] = useState<Record<string, boolean>>({});
+  const [savingContact, setSavingContact] = useState<Record<string, boolean>>({});
 
   const filteredAndSortedPatients = useMemo(() => {
     let filtered = patients;
