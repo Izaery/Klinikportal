@@ -14,7 +14,7 @@ async function tableExists(tableName: string): Promise<boolean> {
       [`public.${tableName}`]
     );
     const exists = !!result.rows[0]?.exists;
-    tableExistsCache.set(tableName, exists);
+    if (exists) tableExistsCache.set(tableName, true);
     return exists;
   } catch {
     return false;
