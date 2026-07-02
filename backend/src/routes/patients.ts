@@ -11,21 +11,21 @@ router.use(authMiddleware);
 router.get('/', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
-    
-    const patients = await queryWithUser(
-      userId,
-      `SELECT p.*,
-        COALESCE(
-          (SELECT json_agg(json_build_object(
+    const hasContacts = await tableExists('patient_contacts');
+    const contactsSelect = hasContacts
+      ? `COALESCE((SELECT json_agg(json_build_object(
               'id', c.id,
               'content', c.content,
               'created_by', c.created_by,
               'created_by_display_name', c.created_by_display_name,
               'created_at', c.created_at
           ) ORDER BY c.created_at DESC)
-           FROM public.patient_contacts c WHERE c.patient_id = p.id),
-          '[]'::json
-        ) AS contacts
+           FROM public.patient_contacts c WHERE c.patient_id = p.id), '[]'::json)`
+      : `'[]'::json`;
+
+    const patients = await queryWithUser(
+      userId,
+      `SELECT p.*, ${contactsSelect} AS contacts
        FROM public.patients p
        ORDER BY p.last_modified_at DESC`
     );
@@ -42,21 +42,21 @@ router.get('/:id', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
     const { id } = req.params;
-
-    const patients = await queryWithUser(
-      userId,
-      `SELECT p.*,
-        COALESCE(
-          (SELECT json_agg(json_build_object(
+    const hasContacts = await tableExists('patient_contacts');
+    const contactsSelect = hasContacts
+      ? `COALESCE((SELECT json_agg(json_build_object(
               'id', c.id,
               'content', c.content,
               'created_by', c.created_by,
               'created_by_display_name', c.created_by_display_name,
               'created_at', c.created_at
           ) ORDER BY c.created_at DESC)
-           FROM public.patient_contacts c WHERE c.patient_id = p.id),
-          '[]'::json
-        ) AS contacts
+           FROM public.patient_contacts c WHERE c.patient_id = p.id), '[]'::json)`
+      : `'[]'::json`;
+
+    const patients = await queryWithUser(
+      userId,
+      `SELECT p.*, ${contactsSelect} AS contacts
        FROM public.patients p WHERE p.id = $1`,
       [id]
     );
