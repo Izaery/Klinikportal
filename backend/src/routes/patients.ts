@@ -21,6 +21,49 @@ async function tableExists(tableName: string): Promise<boolean> {
   }
 }
 
+const patientContactsRequiredColumns = [
+  'id',
+  'patient_id',
+  'content',
+  'created_by',
+  'created_by_display_name',
+  'created_at',
+];
+
+async function patientContactsSchemaAvailable(): Promise<boolean> {
+  try {
+    if (!(await tableExists('patient_contacts'))) return false;
+
+    const result = await pool.query(
+      `SELECT column_name
+       FROM information_schema.columns
+       WHERE table_schema = 'public'
+         AND table_name = 'patient_contacts'
+         AND column_name = ANY($1)`,
+      [patientContactsRequiredColumns]
+    );
+
+    const existingColumns = new Set(result.rows.map((row) => row.column_name));
+    return patientContactsRequiredColumns.every((column) => existingColumns.has(column));
+  } catch (error) {
+    console.warn('Patient contacts schema check failed:', error);
+    return false;
+  }
+}
+
+function patientContactsSelect(hasContacts: boolean): string {
+  if (!hasContacts) return `'[]'::json AS contacts`;
+
+  return `COALESCE((SELECT json_agg(json_build_object(
+            'id', c.id,
+            'content', c.content,
+            'created_by', c.created_by,
+            'created_by_display_name', c.created_by_display_name,
+            'created_at', c.created_at
+        ) ORDER BY c.created_at DESC)
+         FROM public.patient_contacts c WHERE c.patient_id = p.id), '[]'::json) AS contacts`;
+}
+
 // Alle Middleware für Auth
 router.use(authMiddleware);
 
@@ -28,21 +71,11 @@ router.use(authMiddleware);
 router.get('/', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
-    const hasContacts = await tableExists('patient_contacts');
-    const contactsSelect = hasContacts
-      ? `COALESCE((SELECT json_agg(json_build_object(
-              'id', c.id,
-              'content', c.content,
-              'created_by', c.created_by,
-              'created_by_display_name', c.created_by_display_name,
-              'created_at', c.created_at
-          ) ORDER BY c.created_at DESC)
-           FROM public.patient_contacts c WHERE c.patient_id = p.id), '[]'::json)`
-      : `'[]'::json`;
+    const contactsSelect = patientContactsSelect(await patientContactsSchemaAvailable());
 
     const patients = await queryWithUser(
       userId,
-      `SELECT p.*, ${contactsSelect} AS contacts
+      `SELECT p.*, ${contactsSelect}
        FROM public.patients p
        ORDER BY p.last_modified_at DESC`
     );
@@ -59,21 +92,11 @@ router.get('/:id', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
     const { id } = req.params;
-    const hasContacts = await tableExists('patient_contacts');
-    const contactsSelect = hasContacts
-      ? `COALESCE((SELECT json_agg(json_build_object(
-              'id', c.id,
-              'content', c.content,
-              'created_by', c.created_by,
-              'created_by_display_name', c.created_by_display_name,
-              'created_at', c.created_at
-          ) ORDER BY c.created_at DESC)
-           FROM public.patient_contacts c WHERE c.patient_id = p.id), '[]'::json)`
-      : `'[]'::json`;
+    const contactsSelect = patientContactsSelect(await patientContactsSchemaAvailable());
 
     const patients = await queryWithUser(
       userId,
-      `SELECT p.*, ${contactsSelect} AS contacts
+      `SELECT p.*, ${contactsSelect}
        FROM public.patients p WHERE p.id = $1`,
       [id]
     );
