@@ -411,3 +411,37 @@ CREATE TABLE IF NOT EXISTS public.patient_contacts (
   created_at timestamptz DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_patient_contacts_patient ON public.patient_contacts(patient_id);
+
+ALTER TABLE public.patient_contacts ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'patient_contacts'
+      AND policyname = 'Authenticated users can view patient contacts'
+  ) THEN
+    CREATE POLICY "Authenticated users can view patient contacts"
+      ON public.patient_contacts FOR SELECT
+      USING (current_user_id() IS NOT NULL);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'patient_contacts'
+      AND policyname = 'Authorized users can create patient contacts'
+  ) THEN
+    CREATE POLICY "Authorized users can create patient contacts"
+      ON public.patient_contacts FOR INSERT
+      WITH CHECK (
+        created_by = current_user_id()
+        AND has_any_role(current_user_id(), ARRAY[
+          'ADMIN', 'MANAGER', 'INTAKE',
+          'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d', 'arzt_allgemein',
+          'pflege_a', 'pflege_b', 'pflege_c', 'pflege_d'
+        ]::app_role[])
+      );
+  END IF;
+END $$;
