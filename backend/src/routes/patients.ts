@@ -44,7 +44,16 @@ async function patientContactsSchemaAvailable(): Promise<boolean> {
     );
 
     const existingColumns = new Set(result.rows.map((row) => row.column_name));
-    return patientContactsRequiredColumns.every((column) => existingColumns.has(column));
+    const hasRequiredColumns = patientContactsRequiredColumns.every((column) => existingColumns.has(column));
+    if (!hasRequiredColumns) return false;
+
+    await pool.query(
+      `SELECT id, patient_id, content, created_by, created_by_display_name, created_at
+       FROM public.patient_contacts
+       LIMIT 0`
+    );
+
+    return true;
   } catch (error) {
     console.warn('Patient contacts schema check failed:', error);
     return false;
