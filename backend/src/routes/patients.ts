@@ -331,6 +331,21 @@ router.post('/:id/contacts', async (req: AuthenticatedRequest, res: Response) =>
     try {
       await client.query("SELECT set_current_user_id($1)", [userId]);
 
+      // Tabelle bei Bedarf anlegen (idempotent) – schützt vor "relation does not exist"
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS public.patient_contacts (
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          patient_id uuid NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
+          content text NOT NULL,
+          created_by uuid NOT NULL,
+          created_by_display_name text NOT NULL,
+          created_at timestamptz DEFAULT now()
+        );
+      `);
+      await client.query(`CREATE INDEX IF NOT EXISTS idx_patient_contacts_patient ON public.patient_contacts(patient_id);`);
+      // Cache invalidieren, damit GET-Queries die Tabelle sofort mitnutzen
+      tableExistsCache.set('patient_contacts', true);
+
       const result = await client.query(
         `INSERT INTO public.patient_contacts (patient_id, content, created_by, created_by_display_name)
          VALUES ($1, $2, $3, $4)
@@ -343,8 +358,13 @@ router.post('/:id/contacts', async (req: AuthenticatedRequest, res: Response) =>
       client.release();
     }
   } catch (error) {
-    console.error('Add patient contact error:', error);
-    res.status(500).json({ error: 'Fehler beim Speichern des Kontakteintrags' });
+    const err = error as any;
+    console.error('Add patient contact error:', err);
+    res.status(500).json({
+      error: 'Fehler beim Speichern des Kontakteintrags',
+      detail: err?.message,
+      code: err?.code,
+    });
   }
 });
 
