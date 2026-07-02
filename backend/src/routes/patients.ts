@@ -4,6 +4,23 @@ import { authMiddleware, AuthenticatedRequest, requireRoles } from '../middlewar
 
 const router = Router();
 
+// Cache table-existence checks to avoid a roundtrip per request
+const tableExistsCache = new Map<string, boolean>();
+async function tableExists(tableName: string): Promise<boolean> {
+  if (tableExistsCache.has(tableName)) return tableExistsCache.get(tableName)!;
+  try {
+    const result = await pool.query(
+      `SELECT to_regclass($1) IS NOT NULL AS exists`,
+      [`public.${tableName}`]
+    );
+    const exists = !!result.rows[0]?.exists;
+    tableExistsCache.set(tableName, exists);
+    return exists;
+  } catch {
+    return false;
+  }
+}
+
 // Alle Middleware für Auth
 router.use(authMiddleware);
 
