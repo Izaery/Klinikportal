@@ -367,17 +367,31 @@ router.post('/:id/contacts', async (req: AuthenticatedRequest, res: Response) =>
     try {
       await client.query("SELECT set_current_user_id($1)", [userId]);
 
-      const result = await (await routineExists('public.create_patient_contact(uuid,text,uuid,text)')
-        ? client.query(
-            `SELECT * FROM public.create_patient_contact($1, $2, $3, $4)`,
-            [id, content.trim(), userId, displayName]
-          )
-        : client.query(
-            `INSERT INTO public.patient_contacts (patient_id, content, created_by, created_by_display_name)
-             VALUES ($1, $2, $3, $4)
-             RETURNING *`,
-            [id, content.trim(), userId, displayName]
-          ));
+      let result;
+      try {
+        // Immer zuerst die SECURITY-DEFINER-Funktion verwenden. Eine vorgelagerte
+        // Existenzprüfung kann bei eingeschränkten DB-Usern fälschlich fehlschlagen
+        // und dann in den direkten Tabellen-INSERT laufen (permission denied).
+        result = await client.query(
+          `SELECT * FROM public.create_patient_contact($1::uuid, $2::text, $3::uuid, $4::text)`,
+          [id, content.trim(), userId, displayName]
+        );
+      } catch (functionError) {
+        const err = functionError as any;
+
+        // Nur wenn die Funktion wirklich nicht existiert, auf den alten direkten
+        // INSERT zurückfallen. Rechtefehler sollen nicht durch den Fallback verdeckt werden.
+        if (err?.code !== '42883') {
+          throw functionError;
+        }
+
+        result = await client.query(
+          `INSERT INTO public.patient_contacts (patient_id, content, created_by, created_by_display_name)
+           VALUES ($1, $2, $3, $4)
+           RETURNING *`,
+          [id, content.trim(), userId, displayName]
+        );
+      }
 
       res.status(201).json(result.rows[0]);
     } finally {

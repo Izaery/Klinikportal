@@ -515,5 +515,12 @@ BEGIN
 END;
 $$;
 
+-- Diese Grants müssen nach dem Anlegen/Ersetzen der Funktionen erneut gesetzt werden,
+-- damit auch eingeschränkte Backend-DB-User die Funktionen sicher aufrufen können.
+GRANT USAGE ON SCHEMA public TO PUBLIC;
+GRANT EXECUTE ON FUNCTION public.set_current_user_id(uuid) TO PUBLIC;
+GRANT EXECUTE ON FUNCTION public.current_user_id() TO PUBLIC;
+GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO PUBLIC;
+GRANT EXECUTE ON FUNCTION public.has_any_role(uuid, app_role[]) TO PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_patient_contacts(uuid) TO PUBLIC;
 GRANT EXECUTE ON FUNCTION public.create_patient_contact(uuid, text, uuid, text) TO PUBLIC;
