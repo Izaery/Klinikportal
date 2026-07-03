@@ -42,7 +42,8 @@ async function fetchWithAuth<T>(
     const data = await response.json();
 
     if (!response.ok) {
-      return { data: null, error: data.error || 'Ein Fehler ist aufgetreten' };
+      const detail = data.detail ? ` (${data.detail}${data.code ? `, Code: ${data.code}` : ''})` : '';
+      return { data: null, error: `${data.error || 'Ein Fehler ist aufgetreten'}${detail}` };
     }
 
     return { data, error: null };
