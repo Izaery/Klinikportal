@@ -412,6 +412,12 @@ CREATE TABLE IF NOT EXISTS public.patient_contacts (
 );
 CREATE INDEX IF NOT EXISTS idx_patient_contacts_patient ON public.patient_contacts(patient_id);
 
+-- Rechte für lokale Backend-User: bestehende eingeschränkte DB-User brauchen
+-- mindestens Zugriff auf Tabelle und Sequenzen/Funktionen, sonst scheitert POST /contacts.
+GRANT USAGE ON SCHEMA public TO PUBLIC;
+GRANT SELECT, INSERT ON public.patient_contacts TO PUBLIC;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO PUBLIC;
+
 ALTER TABLE public.patient_contacts ENABLE ROW LEVEL SECURITY;
 
 DO $$
@@ -445,3 +451,69 @@ BEGIN
       );
   END IF;
 END $$;
+
+-- Fallback für Installationen mit eingeschränktem Backend-DB-User:
+-- Die API kann Kontakte über diese Funktionen lesen/schreiben, ohne an direkten
+-- Tabellenrechten/RLS des eingeloggten Datenbankusers zu scheitern. Die fachliche
+-- Berechtigung wird weiterhin über app.current_user_id und Rollen geprüft.
+CREATE OR REPLACE FUNCTION public.get_patient_contacts(p_patient_id uuid)
+RETURNS TABLE (
+  id uuid,
+  patient_id uuid,
+  content text,
+  created_by uuid,
+  created_by_display_name text,
+  created_at timestamptz
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT c.id, c.patient_id, c.content, c.created_by, c.created_by_display_name, c.created_at
+  FROM public.patient_contacts c
+  WHERE c.patient_id = p_patient_id
+    AND public.current_user_id() IS NOT NULL
+  ORDER BY c.created_at DESC;
+$$;
+
+CREATE OR REPLACE FUNCTION public.create_patient_contact(
+  p_patient_id uuid,
+  p_content text,
+  p_created_by uuid,
+  p_created_by_display_name text
+)
+RETURNS public.patient_contacts
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  new_contact public.patient_contacts;
+BEGIN
+  IF public.current_user_id() IS NULL THEN
+    RAISE EXCEPTION 'Nicht authentifiziert';
+  END IF;
+
+  IF p_created_by <> public.current_user_id() THEN
+    RAISE EXCEPTION 'Benutzerkontext stimmt nicht überein';
+  END IF;
+
+  IF NOT public.has_any_role(public.current_user_id(), ARRAY[
+    'ADMIN', 'MANAGER', 'INTAKE',
+    'arzt_a', 'arzt_b', 'arzt_c', 'arzt_d', 'arzt_allgemein',
+    'pflege_a', 'pflege_b', 'pflege_c', 'pflege_d'
+  ]::app_role[]) THEN
+    RAISE EXCEPTION 'Keine Berechtigung für Kontakteinträge';
+  END IF;
+
+  INSERT INTO public.patient_contacts (patient_id, content, created_by, created_by_display_name)
+  VALUES (p_patient_id, btrim(p_content), p_created_by, p_created_by_display_name)
+  RETURNING * INTO new_contact;
+
+  RETURN new_contact;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_patient_contacts(uuid) TO PUBLIC;
+GRANT EXECUTE ON FUNCTION public.create_patient_contact(uuid, text, uuid, text) TO PUBLIC;
