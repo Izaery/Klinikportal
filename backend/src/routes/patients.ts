@@ -6,6 +6,8 @@ const router = Router();
 
 // Cache table-existence checks to avoid a roundtrip per request
 const tableExistsCache = new Map<string, boolean>();
+const routineExistsCache = new Map<string, boolean>();
+
 async function tableExists(tableName: string): Promise<boolean> {
   if (tableExistsCache.has(tableName)) return tableExistsCache.get(tableName)!;
   try {
@@ -15,6 +17,21 @@ async function tableExists(tableName: string): Promise<boolean> {
     );
     const exists = !!result.rows[0]?.exists;
     if (exists) tableExistsCache.set(tableName, true);
+    return exists;
+  } catch {
+    return false;
+  }
+}
+
+async function routineExists(routineSignature: string): Promise<boolean> {
+  if (routineExistsCache.has(routineSignature)) return routineExistsCache.get(routineSignature)!;
+  try {
+    const result = await pool.query(
+      `SELECT to_regprocedure($1) IS NOT NULL AS exists`,
+      [routineSignature]
+    );
+    const exists = !!result.rows[0]?.exists;
+    if (exists) routineExistsCache.set(routineSignature, true);
     return exists;
   } catch {
     return false;
@@ -60,8 +77,27 @@ async function patientContactsSchemaAvailable(): Promise<boolean> {
   }
 }
 
-function patientContactsSelect(hasContacts: boolean): string {
-  if (!hasContacts) return `'[]'::json AS contacts`;
+type PatientContactsAccessMode = 'function' | 'table' | 'none';
+
+async function patientContactsAccessMode(): Promise<PatientContactsAccessMode> {
+  if (await routineExists('public.get_patient_contacts(uuid)')) return 'function';
+  if (await patientContactsSchemaAvailable()) return 'table';
+  return 'none';
+}
+
+function patientContactsSelect(accessMode: PatientContactsAccessMode): string {
+  if (accessMode === 'none') return `'[]'::json AS contacts`;
+
+  if (accessMode === 'function') {
+    return `COALESCE((SELECT json_agg(json_build_object(
+              'id', c.id,
+              'content', c.content,
+              'created_by', c.created_by,
+              'created_by_display_name', c.created_by_display_name,
+              'created_at', c.created_at
+          ) ORDER BY c.created_at DESC)
+           FROM public.get_patient_contacts(p.id) c), '[]'::json) AS contacts`;
+  }
 
   return `COALESCE((SELECT json_agg(json_build_object(
             'id', c.id,
@@ -80,7 +116,7 @@ router.use(authMiddleware);
 router.get('/', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
-    const contactsSelect = patientContactsSelect(await patientContactsSchemaAvailable());
+    const contactsSelect = patientContactsSelect(await patientContactsAccessMode());
 
     const patients = await queryWithUser(
       userId,
@@ -101,7 +137,7 @@ router.get('/:id', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
     const { id } = req.params;
-    const contactsSelect = patientContactsSelect(await patientContactsSchemaAvailable());
+    const contactsSelect = patientContactsSelect(await patientContactsAccessMode());
 
     const patients = await queryWithUser(
       userId,
@@ -331,20 +367,17 @@ router.post('/:id/contacts', async (req: AuthenticatedRequest, res: Response) =>
     try {
       await client.query("SELECT set_current_user_id($1)", [userId]);
 
-      const contactsAvailable = await patientContactsSchemaAvailable();
-      if (!contactsAvailable) {
-        return res.status(500).json({
-          error: 'Kontakthistorie ist in der Datenbank noch nicht vollständig eingerichtet',
-          detail: 'Bitte die SQL-Migration für public.patient_contacts inklusive Rechte und RLS-Policies ausführen.',
-        });
-      }
-
-      const result = await client.query(
-        `INSERT INTO public.patient_contacts (patient_id, content, created_by, created_by_display_name)
-         VALUES ($1, $2, $3, $4)
-         RETURNING *`,
-        [id, content.trim(), userId, displayName]
-      );
+      const result = await (await routineExists('public.create_patient_contact(uuid,text,uuid,text)')
+        ? client.query(
+            `SELECT * FROM public.create_patient_contact($1, $2, $3, $4)`,
+            [id, content.trim(), userId, displayName]
+          )
+        : client.query(
+            `INSERT INTO public.patient_contacts (patient_id, content, created_by, created_by_display_name)
+             VALUES ($1, $2, $3, $4)
+             RETURNING *`,
+            [id, content.trim(), userId, displayName]
+          ));
 
       res.status(201).json(result.rows[0]);
     } finally {
